@@ -20,10 +20,78 @@ class FlightyApp {
     const emailPast = emailFlights.filter(f => f.status === "Completed");
     const emailUpcoming = emailFlights.filter(f => f.status !== "Completed");
 
+    // Normalize and prepare 2024 historical flights
+    const airlineMapping = {
+      "Aerolíneas Argentinas": "AR",
+      "LATAM": "LA",
+      "GOL": "G3",
+      "Azul": "AD",
+      "Flybondi": "FO",
+      "Emirates": "EK",
+      "TAP Air Portugal": "TP",
+      "Copa Airlines": "CM",
+      "American Airlines": "AA",
+      "United Airlines": "UA",
+      "Delta Air Lines": "DL",
+      "Air France": "AF",
+      "Lufthansa": "LH",
+      "British Airways": "BA",
+      "Qatar Airways": "QR",
+      "Iberia": "IB"
+    };
+
+    const rawFlights2024 = window.flights2024 || [];
+    const normalized2024 = rawFlights2024.map(f => {
+      const airlineCode = airlineMapping[f.airline] || f.airline;
+      
+      let parsedDuration = 0;
+      if (typeof f.duration === 'string') {
+        const match = f.duration.match(/(\d+)h(?:(\d+)m)?/);
+        if (match) {
+          const hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2] || 0, 10);
+          parsedDuration = hours * 60 + minutes;
+        } else {
+          parsedDuration = parseInt(f.duration, 10) || 0;
+        }
+      } else {
+        parsedDuration = f.duration || 0;
+      }
+
+      let arrTime = "";
+      if (f.time && parsedDuration) {
+        const [h, m] = f.time.split(':').map(Number);
+        const totalMin = h * 60 + m + parsedDuration;
+        const newH = Math.floor(totalMin / 60) % 24;
+        const newM = totalMin % 60;
+        arrTime = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+      }
+
+      return {
+        id: f.id,
+        flightNumber: f.flightNumber,
+        airline: airlineCode,
+        from: f.from,
+        to: f.to,
+        date: f.date,
+        depTime: f.time || "00:00",
+        arrTime: arrTime || "00:00",
+        duration: parsedDuration,
+        distance: f.distance || 0,
+        delay: f.delay || 0,
+        aircraft: f.aircraft || "",
+        tailNumber: f.tailNumber || "",
+        status: "Completed",
+        seat: f.seat || "",
+        baggage: f.baggage || ""
+      };
+    });
+
     // Deduplicate Past Flights (by Flight Number + Date combination)
     const mergedPastMap = {};
     storedPast.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
     emailPast.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
+    normalized2024.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
     this.pastFlights = Object.values(mergedPastMap);
 
     // Deduplicate Upcoming Flights

@@ -33,7 +33,9 @@ window.AIRPORTS = {
   "CUN": { code: "CUN", city: "Cancún", name: "Cancún International", lat: 21.0365, lng: -86.8770 },
   "UNA": { code: "UNA", city: "Ilha de Comandatuba", name: "Hotel Transamérica Airport", lat: -15.3512, lng: -38.9985 },
   "BYO": { code: "BYO", city: "Bonito", name: "Bonito Regional Airport", lat: -21.0119, lng: -56.3769 },
-  "FOR": { code: "FOR", city: "Fortaleza", name: "Pinto Martins International", lat: -3.7758, lng: -38.5322 }
+  "FOR": { code: "FOR", city: "Fortaleza", name: "Pinto Martins International", lat: -3.7758, lng: -38.5322 },
+  "STM": { code: "STM", city: "Santarém", name: "Santarém Airport", lat: -2.4247, lng: -54.7861 },
+  "BSB": { code: "BSB", city: "Brasília", name: "Brasília International", lat: -15.8692, lng: -47.9172 }
 };
 
 window.AIRLINES = {

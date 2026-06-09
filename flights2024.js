@@ -1,6 +1,6 @@
 // ─── FLIGHTS 2024 ────────────────────────────────────────────
 // Historical flight log for 2024
-const flights2024 = [
+window.flights2024 = [
   {
     id: "f24_01",
     flightNumber: "AR 1280",
