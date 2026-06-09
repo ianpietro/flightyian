@@ -1,0 +1,6 @@
+sync_emails.py
+.env
+__pycache__/
+*.pyc
+credentials.json
+token.json
