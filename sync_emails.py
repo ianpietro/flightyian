@@ -20,6 +20,11 @@ from datetime import datetime
 # Coloque suas credenciais entre as aspas abaixo para não precisar digitar toda vez:
 DEFAULT_EMAIL = "ianpietrocapo@gmail.com"
 DEFAULT_APP_PASSWORD = "lfugqbqkcxpgvops"
+
+# Integração opcional com Supabase (Sincronização na Nuvem)
+SUPABASE_URL = "SUA_PROJECT_URL_AQUI"
+SUPABASE_KEY = "SUA_SERVICE_ROLE_KEY_AQUI"
+SUPABASE_USER_ID = "SEU_USER_ID_SUPABASE_AQUI"
 # ======================================================================
 
 # Airport registers matching mockData.js coordinates for Haversine math
@@ -343,6 +348,70 @@ def save_flights_js(file_path, flights):
         return True
     except Exception as e:
         print(f"Erro ao gravar {file_path}: {e}")
+        return False
+
+def sync_with_supabase(flights):
+    # Verifica se os dados necessários estão configurados
+    if (not SUPABASE_URL or SUPABASE_URL == "SUA_PROJECT_URL_AQUI" or 
+        not SUPABASE_KEY or SUPABASE_KEY == "SUA_SERVICE_ROLE_KEY_AQUI" or 
+        not SUPABASE_USER_ID or SUPABASE_USER_ID == "SEU_USER_ID_SUPABASE_AQUI"):
+        return False
+        
+    print("\n[+] Sincronizando voos reais com o Supabase...")
+    try:
+        from supabase import create_client
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        supabase_records = []
+        for f in flights:
+            dep_code = f["from"]
+            arr_code = f["to"]
+            
+            dep_info = AIRPORTS_DB.get(dep_code, {"city": dep_code})
+            arr_info = AIRPORTS_DB.get(arr_code, {"city": arr_code})
+            
+            airline_name = AIRLINES_DB.get(f["airline"], f["airline"])
+            
+            # Montar registro para inserção
+            supabase_records.append({
+                "user_id": SUPABASE_USER_ID,
+                "flight_date": f["date"],
+                "airline_code": f["airline"],
+                "airline_name": airline_name,
+                "flight_number": f["flightNumber"],
+                "origin_airport_code": dep_code,
+                "origin_airport_name": f"Aeroporto de {dep_info.get('city')}" if "city" in dep_info else dep_code,
+                "origin_city": dep_info.get("city", dep_code),
+                "origin_country_code": "BR" if dep_code in ["CNF", "IGU", "GIG", "VCP", "BEL", "GRU", "LDB", "SDU", "CGH", "MCZ", "UNA", "BYO", "FOR"] else "AR" if dep_code in ["IGR", "AEP", "REL", "USH", "EZE", "BRC"] else "US",
+                "destination_airport_code": arr_code,
+                "destination_airport_name": f"Aeroporto de {arr_info.get('city')}" if "city" in arr_info else arr_code,
+                "destination_city": arr_info.get("city", arr_code),
+                "destination_country_code": "BR" if arr_code in ["CNF", "IGU", "GIG", "VCP", "BEL", "GRU", "LDB", "SDU", "CGH", "MCZ", "UNA", "BYO", "FOR"] else "AR" if arr_code in ["IGR", "AEP", "REL", "USH", "EZE", "BRC"] else "US",
+                "aircraft_type": f.get("aircraft", "Commercial"),
+                "aircraft_registration": f.get("tailNumber", ""),
+                "distance_km": int(f.get("distance", 0)),
+                "duration_minutes": int(f.get("duration", 0)),
+                "seat_number": f.get("bookingCode", ""),
+                "flight_class": "economy",
+                "reason_for_travel": "leisure",
+                "is_public": True
+            })
+
+        # Buscar chaves existentes no banco do Supabase para evitar duplicados
+        res = supabase.table("flights").select("flight_number, flight_date").eq("user_id", SUPABASE_USER_ID).execute()
+        existing_keys = {f"{row['flight_number']}_{row['flight_date']}" for row in res.data}
+        
+        to_insert = [r for r in supabase_records if f"{r['flight_number']}_{r['flight_date']}" not in existing_keys]
+        
+        if to_insert:
+            supabase.table("flights").insert(to_insert).execute()
+            print(f"[✓] {len(to_insert)} novos voos inseridos no Supabase com sucesso!")
+        else:
+            print("[✓] Todos os voos já estão atualizados no Supabase.")
+            
+        return True
+    except Exception as e:
+        print(f"[!] Erro ao sincronizar com o Supabase: {e}")
         return False
 
 def main():
@@ -694,9 +763,13 @@ def main():
     updated_list = list(merged_flights.values())
     
     if save_flights_js(db_file_path, updated_list):
-        print(f"[v] Sucesso! Sincronização concluída.")
+        print(f"[v] Sucesso! Sincronização concluída localmente.")
         print(f"[v] {added_count} novos voos adicionados nesta rodada.")
         print(f"[v] Total de voos reais importados de e-mail ativos: {len(updated_list)}")
+        
+        # Tenta sincronizar com o Supabase na nuvem (se configurado)
+        sync_with_supabase(updated_list)
+        
         print("\n--> PRÓXIMO PASSO:")
         print("Basta dar dois cliques no arquivo 'index.html' da sua pasta para visualizar")
         print("seus voos reais sincronizados plotados na aba do Mapa e Passport!")
