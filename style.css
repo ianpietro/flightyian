@@ -3,19 +3,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #000000;
-  --card-bg: rgba(22, 22, 26, 0.72);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --text-primary: #ffffff;
-  --text-secondary: #9a9a9f;
-  --text-muted: #646468;
-  --accent-pro: #bf5af2;
-  --accent-pro-gradient: linear-gradient(135deg, #b87cf8, #7a3bef);
-  --accent-gold: #ffd700;
-  --warning-red: #ff453a;
-  --warning-bg: rgba(255, 69, 58, 0.12);
-  --success-green: #30d158;
-  --info-blue: #0a84ff;
+  /* ── Flighty IAN · Cockpit Dark Palette ───────────────────────
+     Inspirado em: instrumentos de vidro de aeronave, HUD noturno
+     e painéis de cockpit de aviação premium. Foge completamente
+     do azul/roxo padrão de IA. ─────────────────────────────── */
+
+  --bg-color: #0b0f13;                          /* Slate quase-preto — como cabine às 2h da manhã */
+  --card-bg: rgba(16, 22, 28, 0.78);            /* Vidro fosco sobre escuro */
+  --card-border: rgba(255, 200, 100, 0.07);     /* Borda levemente âmbar — reflexo de painel */
+
+  --text-primary: #e8e0d0;                       /* Branco-marfim quente — não é branco puro */
+  --text-secondary: #8a8880;                     /* Cinza-cobre apagado */
+  --text-muted: #52504c;                         /* Quase invisível — texto terciário */
+
+  /* Âmbar aeronáutico — a cor dominante do app */
+  --accent-pro: #e8a020;
+  --accent-pro-gradient: linear-gradient(135deg, #f0b830, #c07010);
+
+  /* Teal de radar — substitui azul iOS */
+  --info-blue: #1ab8a0;
+
+  /* Dourado vivo para voos passados */
+  --accent-gold: #f0b830;
+
+  /* Vermelho-coral para avisos */
+  --warning-red: #e05040;
+  --warning-bg: rgba(224, 80, 64, 0.12);
+
+  /* Verde radar para status ok */
+  --success-green: #28c880;
+
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
 }

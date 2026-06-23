@@ -1097,64 +1097,9 @@ class FlightyApp {
       }
     }
 
-    // ── Compute bounding box of all flight coords ───────────────
-    const allCoords = [];
+    // ── Draw great-circle routes on world map ────────────────────
     const validFlights = flights.filter(f => AIRPORTS[f.from] && AIRPORTS[f.to]);
 
-    validFlights.forEach(f => {
-      allCoords.push([AIRPORTS[f.from].lng, AIRPORTS[f.from].lat]);
-      allCoords.push([AIRPORTS[f.to].lng, AIRPORTS[f.to].lat]);
-    });
-
-    let projXFn = projX;
-    let projYFn = projY;
-
-    if (allCoords.length > 0) {
-      // Determine tight bounding box with padding
-      const lngs = allCoords.map(c => c[0]);
-      const lats = allCoords.map(c => c[1]);
-      const minLng = Math.min(...lngs) - 15;
-      const maxLng = Math.max(...lngs) + 15;
-      const minLat = Math.min(...lats) - 10;
-      const maxLat = Math.max(...lats) + 10;
-
-      // Local projection zoomed into bounding box
-      projXFn = lng => pad + ((lng - minLng) / (maxLng - minLng)) * (W - pad * 2);
-      projYFn = lat => pad + ((maxLat - lat) / (maxLat - minLat)) * (H - pad * 2);
-
-      // Redraw background + land with zoomed projection
-      ctx.fillStyle = '#dce8dc';
-      ctx.beginPath();
-      ctx.roundRect(0, 0, W, H, 10);
-      ctx.fill();
-
-      if (window._passportWorldGeo) {
-        const drawGeoZoomed = (geoJson) => {
-          ctx.fillStyle = '#b8ccb8';
-          ctx.strokeStyle = '#92aa92';
-          ctx.lineWidth = 0.3;
-          const drawPoly = (rings) => {
-            ctx.beginPath();
-            rings[0].forEach(([lng, lat], i) => {
-              const x = projXFn(lng), y = projYFn(lat);
-              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            });
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          };
-          geoJson.features.forEach(feat => {
-            const g = feat.geometry;
-            if (!g) return;
-            if (g.type === 'Polygon') drawPoly(g.coordinates);
-            else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => drawPoly(p));
-          });
-        };
-        drawGeoZoomed(window._passportWorldGeo);
-      }
-    }
-
-    // ── Draw great-circle routes ────────────────────────────────
     validFlights.forEach(f => {
       const dep = AIRPORTS[f.from];
       const arr = AIRPORTS[f.to];
@@ -1179,17 +1124,17 @@ class FlightyApp {
       // Draw route glow
       ctx.beginPath();
       points.forEach(([lng, lat], i) => {
-        const x = projXFn(lng), y = projYFn(lat);
+        const x = projX(lng), y = projY(lat);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
-      ctx.strokeStyle = 'rgba(180,30,30,0.2)';
+      ctx.strokeStyle = 'rgba(180,30,30,0.25)';
       ctx.lineWidth = 3;
       ctx.stroke();
 
       // Draw route line (dashed, red)
       ctx.beginPath();
       points.forEach(([lng, lat], i) => {
-        const x = projXFn(lng), y = projYFn(lat);
+        const x = projX(lng), y = projY(lat);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.setLineDash([3, 3]);
@@ -1206,8 +1151,8 @@ class FlightyApp {
         if (drawnAirports.has(code)) return;
         drawnAirports.add(code);
         const ap = AIRPORTS[code];
-        const x = projXFn(ap.lng);
-        const y = projYFn(ap.lat);
+        const x = projX(ap.lng);
+        const y = projY(ap.lat);
         // White halo
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
@@ -1226,6 +1171,7 @@ class FlightyApp {
     ctx.font = '7px Outfit, sans-serif';
     ctx.fillText('© Natural Earth', 4, H - 3);
   }
+
 
   // Save profile modifications (name and base64 avatar) back to Supabase
   async saveProfileToSupabase() {
