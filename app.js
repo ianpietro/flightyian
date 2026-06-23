@@ -1009,167 +1009,168 @@ class FlightyApp {
     const canvas = document.getElementById('passport-mini-map');
     if (!canvas) return;
 
-    // Size canvas to its CSS pixel dimensions
-    const W = canvas.offsetWidth || 520;
-    const H = canvas.offsetHeight || 175;
-    canvas.width = W * 2;  // retina
+    // Retina-ready sizing
+    const W = canvas.offsetWidth  || 520;
+    const H = canvas.offsetHeight || 200;
+    canvas.width  = W * 2;
     canvas.height = H * 2;
-    canvas.style.width = W + 'px';
+    canvas.style.width  = W + 'px';
     canvas.style.height = H + 'px';
 
     const ctx = canvas.getContext('2d');
-    ctx.scale(2, 2); // retina scaling
+    ctx.scale(2, 2);
 
-    // ── Background ──────────────────────────────────────────────
-    ctx.fillStyle = '#dce8dc';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, W, H, 10);
-    ctx.fill();
+    // ── 1. White base background ─────────────────────────────────
+    ctx.fillStyle = '#f8faf8';
+    ctx.fillRect(0, 0, W, H);
 
-    // ── Equirectangular projection helpers ──────────────────────
-    const pad = 8;
+    // ── 2. Iridescent shimmer overlay (top half only) ────────────
+    //    Replicates the holographic sheen in the reference image
+    const shimmer = ctx.createLinearGradient(0, 0, W, H * 0.6);
+    shimmer.addColorStop(0.00, 'rgba(200, 240, 255, 0.55)');
+    shimmer.addColorStop(0.20, 'rgba(180, 255, 230, 0.35)');
+    shimmer.addColorStop(0.40, 'rgba(255, 240, 200, 0.25)');
+    shimmer.addColorStop(0.60, 'rgba(210, 190, 255, 0.20)');
+    shimmer.addColorStop(0.80, 'rgba(180, 230, 255, 0.15)');
+    shimmer.addColorStop(1.00, 'rgba(255,255,255,0.00)');
+    ctx.fillStyle = shimmer;
+    ctx.fillRect(0, 0, W, H * 0.6);
+
+    // ── 3. Equirectangular projection ────────────────────────────
+    const pad = 4;
     const projX = lng => pad + ((lng + 180) / 360) * (W - pad * 2);
     const projY = lat => pad + ((90 - lat) / 180) * (H - pad * 2);
 
-    // ── Draw world land polygons from Natural Earth GeoJSON ─────
-    const drawGeo = (geoJson) => {
-      ctx.fillStyle = '#b8ccb8';
-      ctx.strokeStyle = '#92aa92';
-      ctx.lineWidth = 0.3;
+    // ── 4. Fetch & cache world GeoJSON ───────────────────────────
+    if (!window._passportWorldGeo) {
+      try {
+        const res  = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topo = await res.json();
+        window._passportWorldGeo = window.topojson
+          ? window.topojson.feature(topo, topo.objects.land)
+          : null;
+        if (!window._passportWorldGeo) {
+          const r2 = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson');
+          window._passportWorldGeo = await r2.json();
+        }
+      } catch(e) { window._passportWorldGeo = null; }
+    }
 
-      const drawPolygon = (rings) => {
+    // ── 5. Draw teal land masses (like reference) ────────────────
+    const drawLand = (geo) => {
+      // Subtle dot grid texture on ocean
+      ctx.fillStyle = 'rgba(130,190,175,0.07)';
+      for (let gx = pad; gx < W; gx += 6) {
+        for (let gy = pad; gy < H; gy += 6) {
+          ctx.beginPath();
+          ctx.arc(gx, gy, 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const drawPoly = (rings) => {
         ctx.beginPath();
         rings[0].forEach(([lng, lat], i) => {
-          if (i === 0) ctx.moveTo(projX(lng), projY(lat));
-          else ctx.lineTo(projX(lng), projY(lat));
+          i === 0
+            ? ctx.moveTo(projX(lng), projY(lat))
+            : ctx.lineTo(projX(lng), projY(lat));
         });
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
       };
 
-      geoJson.features.forEach(feature => {
-        const g = feature.geometry;
-        if (!g) return;
-        if (g.type === 'Polygon') {
-          drawPolygon(g.coordinates);
-        } else if (g.type === 'MultiPolygon') {
-          g.coordinates.forEach(poly => drawPolygon(poly));
-        }
+      // Land fill: teal translucent (like reference)
+      ctx.fillStyle   = 'rgba(100, 185, 165, 0.38)';
+      ctx.strokeStyle = 'rgba(70,  160, 140, 0.55)';
+      ctx.lineWidth   = 0.4;
+
+      geo.features.forEach(f => {
+        if (!f.geometry) return;
+        if (f.geometry.type === 'Polygon')
+          drawPoly(f.geometry.coordinates);
+        else if (f.geometry.type === 'MultiPolygon')
+          f.geometry.coordinates.forEach(p => drawPoly(p));
       });
     };
 
-    // ── Fetch GeoJSON (cache in memory) ─────────────────────────
-    if (!window._passportWorldGeo) {
-      try {
-        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const topo = await res.json();
-        // Convert TopoJSON → GeoJSON using browser-compatible topojson-client
-        if (window.topojson) {
-          window._passportWorldGeo = window.topojson.feature(topo, topo.objects.countries);
-        } else {
-          // Fallback: fetch pre-converted GeoJSON
-          const r2 = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson');
-          window._passportWorldGeo = await r2.json();
-        }
-      } catch(e) {
-        window._passportWorldGeo = null;
-      }
-    }
+    if (window._passportWorldGeo) drawLand(window._passportWorldGeo);
 
-    if (window._passportWorldGeo) {
-      drawGeo(window._passportWorldGeo);
-    } else {
-      // Minimal fallback: just draw graticule lines
-      ctx.strokeStyle = 'rgba(0,80,0,0.15)';
-      ctx.lineWidth = 0.5;
-      for (let lat = -60; lat <= 60; lat += 30) {
-        ctx.beginPath();
-        ctx.moveTo(projX(-180), projY(lat));
-        ctx.lineTo(projX(180), projY(lat));
-        ctx.stroke();
-      }
-      for (let lng = -150; lng <= 150; lng += 60) {
-        ctx.beginPath();
-        ctx.moveTo(projX(lng), projY(90));
-        ctx.lineTo(projX(lng), projY(-90));
-        ctx.stroke();
-      }
-    }
-
-    // ── Draw great-circle routes on world map ────────────────────
+    // ── 6. Draw great-circle routes ──────────────────────────────
     const validFlights = flights.filter(f => AIRPORTS[f.from] && AIRPORTS[f.to]);
 
     validFlights.forEach(f => {
-      const dep = AIRPORTS[f.from];
-      const arr = AIRPORTS[f.to];
-      const p1 = [dep.lng, dep.lat];
-      const p2 = [arr.lng, arr.lat];
+      const p1 = [AIRPORTS[f.from].lng, AIRPORTS[f.from].lat];
+      const p2 = [AIRPORTS[f.to].lng,   AIRPORTS[f.to].lat];
 
-      // Generate great circle points
       let points;
       try {
         const gc = turf.greatCircle(turf.point(p1), turf.point(p2), { npoints: 80 });
         points = gc.geometry.coordinates;
-        // Fix antimeridian
         for (let i = 1; i < points.length; i++) {
-          const diff = points[i][0] - points[i - 1][0];
-          if (diff > 180) points[i][0] -= 360;
-          else if (diff < -180) points[i][0] += 360;
+          const d = points[i][0] - points[i-1][0];
+          if (d >  180) points[i][0] -= 360;
+          if (d < -180) points[i][0] += 360;
         }
-      } catch(e) {
-        points = [p1, p2];
-      }
+      } catch(e) { points = [p1, p2]; }
 
-      // Draw route glow
+      // Glow halo
       ctx.beginPath();
       points.forEach(([lng, lat], i) => {
-        const x = projX(lng), y = projY(lat);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        i === 0
+          ? ctx.moveTo(projX(lng), projY(lat))
+          : ctx.lineTo(projX(lng), projY(lat));
       });
-      ctx.strokeStyle = 'rgba(180,30,30,0.25)';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(200, 40, 40, 0.18)';
+      ctx.lineWidth   = 4;
+      ctx.setLineDash([]);
       ctx.stroke();
 
-      // Draw route line (dashed, red)
+      // Main dashed red line
       ctx.beginPath();
       points.forEach(([lng, lat], i) => {
-        const x = projX(lng), y = projY(lat);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        i === 0
+          ? ctx.moveTo(projX(lng), projY(lat))
+          : ctx.lineTo(projX(lng), projY(lat));
       });
-      ctx.setLineDash([3, 3]);
-      ctx.strokeStyle = '#c0392b';
-      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = '#cc2828';
+      ctx.lineWidth   = 1.4;
       ctx.stroke();
       ctx.setLineDash([]);
     });
 
-    // ── Draw airport dots ───────────────────────────────────────
-    const drawnAirports = new Set();
+    // ── 7. Airport dots ──────────────────────────────────────────
+    const seen = new Set();
     validFlights.forEach(f => {
       [f.from, f.to].forEach(code => {
-        if (drawnAirports.has(code)) return;
-        drawnAirports.add(code);
+        if (seen.has(code)) return;
+        seen.add(code);
         const ap = AIRPORTS[code];
-        const x = projX(ap.lng);
-        const y = projY(ap.lat);
-        // White halo
+        const x  = projX(ap.lng);
+        const y  = projY(ap.lat);
+        // White ring
         ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.arc(x, y, 4.5, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
-        // Red dot
+        // Red fill
         ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#c0392b';
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle   = '#cc2828';
+        ctx.strokeStyle = 'rgba(180,0,0,0.4)';
+        ctx.lineWidth   = 1;
         ctx.fill();
+        ctx.stroke();
       });
     });
 
-    // ── Attribution ─────────────────────────────────────────────
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.font = '7px Outfit, sans-serif';
-    ctx.fillText('© Natural Earth', 4, H - 3);
+    // ── 8. Subtle vignette at bottom ─────────────────────────────
+    const vig = ctx.createLinearGradient(0, H * 0.65, 0, H);
+    vig.addColorStop(0, 'rgba(220,235,220,0)');
+    vig.addColorStop(1, 'rgba(220,235,220,0.35)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, H * 0.65, W, H * 0.35);
   }
 
 

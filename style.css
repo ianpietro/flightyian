@@ -1308,12 +1308,12 @@ body {
 }
 
 #passport-mini-map {
-  height: 175px;
+  height: 200px;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px 10px 0 0;
+  border: none;
   display: block;
-  background: #e8f0e8;
+  background: #f8faf8;
 }
 
 .passport-divider {
