@@ -5,8 +5,8 @@ const PAST_FLIGHTS = window.PAST_FLIGHTS;
 const UPCOMING_FLIGHTS = window.UPCOMING_FLIGHTS;
 
 // Supabase Configuration Configuration
-const SUPABASE_URL = "SUA_URL_SUPABASE";
-const SUPABASE_ANON_KEY = "SUA_KEY_ANON_SUPABASE";
+const SUPABASE_URL = "https://vmrnhuwhnkkvkcbdgida.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_d-JR4zjC-cd-VSdg4PJsbg_p0QDqHBI";
 
 class FlightyApp {
   constructor() {

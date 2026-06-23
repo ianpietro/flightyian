@@ -22,7 +22,7 @@ DEFAULT_EMAIL = "ianpietrocapo@gmail.com"
 DEFAULT_APP_PASSWORD = "lfugqbqkcxpgvops"
 
 # Integração opcional com Supabase (Sincronização na Nuvem)
-SUPABASE_URL = "SUA_PROJECT_URL_AQUI"
+SUPABASE_URL = "https://vmrnhuwhnkkvkcbdgida.supabase.co"
 SUPABASE_KEY = "SUA_SERVICE_ROLE_KEY_AQUI"
 SUPABASE_USER_ID = "SEU_USER_ID_SUPABASE_AQUI"
 # ======================================================================

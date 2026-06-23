@@ -9,12 +9,12 @@ from supabase import create_client
 # CONFIGURAÇÃO DO SUPABASE
 # Preencha com as credenciais obtidas no painel do Supabase.
 # ATENÇÃO: Use a service_role key aqui para bypassar as regras de RLS na inserção.
-SUPABASE_URL = "SUA_PROJECT_URL_AQUI"
+SUPABASE_URL = "https://vmrnhuwhnkkvkcbdgida.supabase.co"
 SUPABASE_KEY = "SUA_SERVICE_ROLE_KEY_AQUI" 
 # ======================================================================
 
 def main():
-    if SUPABASE_URL == "SUA_PROJECT_URL_AQUI" or SUPABASE_KEY == "SUA_SERVICE_ROLE_KEY_AQUI":
+    if SUPABASE_URL == "SUA_PROJECT_URL_AQUI" or SUPABASE_KEY == "SUA_SERVICE_ROLE_KEY_AQUI" or SUPABASE_URL.startswith("SUA_"):
         print("[-] ERRO: Você precisa configurar as variáveis SUPABASE_URL e SUPABASE_KEY no topo deste script!")
         return
 
