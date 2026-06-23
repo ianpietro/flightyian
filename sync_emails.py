@@ -21,10 +21,22 @@ from datetime import datetime
 DEFAULT_EMAIL = "ianpietrocapo@gmail.com"
 DEFAULT_APP_PASSWORD = "lfugqbqkcxpgvops"
 
+# Função leve para carregar variáveis do arquivo .env
+def load_env():
+    env = {}
+    if os.path.exists(".env"):
+        with open(".env", "r", encoding="utf-8") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    key, val = line.strip().split("=", 1)
+                    env[key.strip()] = val.strip().strip('"').strip("'")
+    return env
+
 # Integração opcional com Supabase (Sincronização na Nuvem)
-SUPABASE_URL = "https://vmrnhuwhnkkvkcbdgida.supabase.co"
-SUPABASE_KEY = "SUA_SERVICE_ROLE_KEY_AQUI"
-SUPABASE_USER_ID = "SEU_USER_ID_SUPABASE_AQUI"
+env = load_env()
+SUPABASE_URL = env.get("SUPABASE_URL", "")
+SUPABASE_KEY = env.get("SUPABASE_KEY", "")
+SUPABASE_USER_ID = env.get("SUPABASE_USER_ID", "")
 # ======================================================================
 
 # Airport registers matching mockData.js coordinates for Haversine math

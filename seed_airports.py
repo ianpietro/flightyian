@@ -2,20 +2,31 @@
 # -*- coding: utf-8 -*-
 # Flighty IAN - Supabase Airports Seeding Script
 
+import os
 import pandas as pd
 from supabase import create_client
 
+# Função leve para carregar variáveis do arquivo .env
+def load_env():
+    env = {}
+    if os.path.exists(".env"):
+        with open(".env", "r", encoding="utf-8") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    key, val = line.strip().split("=", 1)
+                    env[key.strip()] = val.strip().strip('"').strip("'")
+    return env
+
 # ======================================================================
 # CONFIGURAÇÃO DO SUPABASE
-# Preencha com as credenciais obtidas no painel do Supabase.
-# ATENÇÃO: Use a service_role key aqui para bypassar as regras de RLS na inserção.
-SUPABASE_URL = "https://vmrnhuwhnkkvkcbdgida.supabase.co"
-SUPABASE_KEY = "SUA_SERVICE_ROLE_KEY_AQUI" 
+env = load_env()
+SUPABASE_URL = env.get("SUPABASE_URL", "")
+SUPABASE_KEY = env.get("SUPABASE_KEY", "")
 # ======================================================================
 
 def main():
-    if SUPABASE_URL == "SUA_PROJECT_URL_AQUI" or SUPABASE_KEY == "SUA_SERVICE_ROLE_KEY_AQUI" or SUPABASE_URL.startswith("SUA_"):
-        print("[-] ERRO: Você precisa configurar as variáveis SUPABASE_URL e SUPABASE_KEY no topo deste script!")
+    if not SUPABASE_URL or not SUPABASE_KEY or SUPABASE_KEY == "SUA_SERVICE_ROLE_KEY_AQUI":
+        print("[-] ERRO: Chaves do Supabase não encontradas. Certifique-se de configurar o arquivo .env!")
         return
 
     print("[+] Conectando ao Supabase...")
