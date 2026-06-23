@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Flighty IAN - Rastreador de Voos Premium</title>
+  <title>Voos IAN - Rastreador de Voos Premium</title>
   
   <!-- Mapbox GL CSS -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
@@ -11,7 +11,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
         
   <!-- Custom Styling File -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.0.3">
+  <!-- html2canvas for exporting PNG -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -122,63 +124,124 @@
             <button class="selector-btn" onclick="document.getElementById('passport-year-select').value='2025'; onYearChange(); this.parentNode.querySelectorAll('.selector-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">2025</button>
           </div>
 
-          <!-- Flighty Pro Unlocked Banner -->
-          <div class="stats-banner-card">
-            <div class="stats-banner-text">
-              <h4>Membro Flighty Pro Ativo</h4>
-              <p>Acesso total desbloqueado: mapas históricos completos e estatísticas detalhadas.</p>
+          <!-- Physical-style Flight Passport Booklet Card -->
+          <div class="passport-booklet" id="mypassport-booklet-card">
+            <!-- Top Half: Map & Country Flags -->
+            <div class="passport-top-half">
+              <div class="passport-flags-row">
+                <div id="passport-flags">
+                  <span class="flag-icon">🇧🇷</span>
+                  <span class="flag-icon">🇦🇷</span>
+                </div>
+              </div>
+              <div id="passport-mini-map"></div>
             </div>
-            <span class="pro-badge pro-badge-gold">PRO</span>
-          </div>
 
-          <!-- OLED Passport Statistics Card -->
-          <div class="passport-card-glow">
-            <div class="passport-card-header">
-              <span class="passport-title">Passport 2026</span>
-              <span class="pro-badge" style="font-size: 9px;">Unlocked</span>
-            </div>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <span class="stat-val" id="pass-flights-count">9</span>
-                <span class="stat-lbl">Voos</span>
-                <span class="stat-sub">0 Long Curso</span>
+            <!-- Perforated Divider Line -->
+            <div class="passport-divider"></div>
+
+            <!-- Bottom Half: Identity Information & Stats -->
+            <div class="passport-bottom-half">
+              <div class="passport-title-section">
+                <div class="passport-main-title">FLIGHT PASSPORT</div>
+                <div class="passport-country-title" id="passport-country-name" contenteditable="true">BRASIL</div>
+                <div class="passport-icon-and-num">
+                  <span>📘</span>
+                  <span class="passport-number" id="passport-num-display">FP000001A</span>
+                </div>
               </div>
-              <div class="stat-item">
-                <span class="stat-val" id="pass-distance-count">10.846 km</span>
-                <span class="stat-lbl">Distância</span>
-                <span class="stat-sub" id="pass-distance-sub">0,3x voltas à Terra</span>
-              </div>
-              <div class="stat-item" style="margin-top: 14px;">
-                <span class="stat-val" id="pass-time-count">18h 57m</span>
-                <span class="stat-lbl">Tempo de Voo</span>
-              </div>
-              <div class="stat-item" style="margin-top: 14px;">
-                <div style="display: flex; gap: 16px;">
-                  <div>
-                    <span class="stat-val" id="pass-airports-count">12</span>
-                    <span class="stat-lbl" style="display: block;">Aero</span>
+
+              <div class="passport-info-grid">
+                <!-- Left: Photo with Click-to-Upload Trigger -->
+                <div class="passport-photo-container" id="passport-photo-trigger" title="Clique para alterar a foto">
+                  <img id="passport-photo-img" src="traveler_avatar.png" alt="Foto Passaporte" />
+                  <div class="photo-edit-overlay">Alterar</div>
+                </div>
+                <input type="file" id="passport-photo-input" accept="image/*" style="display: none;" />
+
+                <!-- Right: Identity Fields -->
+                <div class="passport-details-container">
+                  <div class="passport-field-row">
+                    <div class="passport-field">
+                      <span class="field-label">Type</span>
+                      <span class="field-value" style="border-bottom: none; cursor: default;">FP</span>
+                    </div>
+                    <div class="passport-field">
+                      <span class="field-label">Country</span>
+                      <span class="field-value" style="border-bottom: none; cursor: default;" id="passport-country-code-display">BRA</span>
+                    </div>
                   </div>
-                  <div>
-                    <span class="stat-val" id="pass-airlines-count">4</span>
-                    <span class="stat-lbl" style="display: block;">Cias</span>
+
+                  <div class="passport-field">
+                    <span class="field-label">Surname</span>
+                    <span class="field-value" id="passport-surname" contenteditable="true" title="Clique para editar o sobrenome">CAPO</span>
+                  </div>
+
+                  <div class="passport-field">
+                    <span class="field-label">Given name</span>
+                    <span class="field-value" id="passport-givenname" contenteditable="true" title="Clique para editar o nome">IAN</span>
+                  </div>
+
+                  <div class="passport-field-row">
+                    <div class="passport-field">
+                      <span class="field-label">Date of issue</span>
+                      <span class="field-value" id="passport-issue-date" contenteditable="true" title="Clique para editar a data de emissão">23 JUN 2026</span>
+                    </div>
+                    <div class="passport-field">
+                      <span class="field-label">Authority</span>
+                      <span class="field-value" style="border-bottom: none; cursor: default;">FLIGHT PASSPORT</span>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <!-- Quick Stats Section inside booklet -->
+              <div class="passport-quick-stats">
+                <div class="passport-stat-box">
+                  <div class="stat-number-row">
+                    <span class="stat-big-number" id="pass-flights-count">9</span>
+                    <span class="stat-unit">flights</span>
+                  </div>
+                  <!-- Dynamic airline badges -->
+                  <div class="passport-airline-logos" id="passport-airline-logos"></div>
+                </div>
+
+                <div class="passport-stat-details">
+                  <div class="passport-sub-stat">
+                    <span class="sub-label">Distance</span>
+                    <span class="sub-value" id="pass-distance-count">10.846 km</span>
+                  </div>
+                  <div class="passport-sub-stat">
+                    <span class="sub-label">Flight Time</span>
+                    <span class="sub-value" id="pass-time-count">18h 57m</span>
+                  </div>
+                  <div class="passport-sub-stat">
+                    <span class="sub-label">Airlines</span>
+                    <span class="sub-value" id="pass-airlines-count">4</span>
+                  </div>
+                  <div class="passport-sub-stat">
+                    <span class="sub-label">Airports</span>
+                    <span class="sub-value" id="pass-airports-count">12</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Machine Readable Zone (MRZ) -->
+              <div class="passport-mrz">
+                <div id="passport-mrz-line1">P&lt;FP&lt;CAPO&lt;&lt;IAN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                <div id="passport-mrz-line2">FP000001A&lt;260623&lt;FLIGHTPASSPORT.APP&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+              </div>
+
             </div>
           </div>
 
-          <!-- Crimson Delay Card -->
-          <div class="delay-stat-card">
-            <div>
-              <span class="delay-main-val" id="pass-delays-total">54</span>
-              <span style="font-size: 16px; font-weight:700;">minutos</span>
-              <div class="delay-lbl">perdidos com atrasos</div>
-              <div class="delay-sub" id="pass-delays-avg">Atrasos de voos demoraram em média 10m</div>
-            </div>
-            <span style="font-size: 32px;">⏱️</span>
-          </div>
+          <!-- Share Action Button -->
+          <button class="download-passport-btn" id="download-passport-btn">
+            <span>💾</span> Baixar Passaporte (PNG)
+          </button>
 
-          <!-- Indigo Most Flown Aircraft Card -->
+
+           <!-- Indigo Most Flown Aircraft Card -->
           <div class="aircraft-stat-card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div>
@@ -189,67 +252,12 @@
               <span style="font-size: 20px;">✈️</span>
             </div>
             
-            <!-- Gorgeous Vector SVG Aircraft Profile drawing (Custom Aerolíneas Argentinas B737 livery style) -->
-            <div class="aircraft-illustration-box">
-              <svg class="plane-svg" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#ffffff"/>
-                    <stop offset="60%" stop-color="#ffffff"/>
-                    <stop offset="65%" stop-color="#009CDE"/>
-                    <stop offset="100%" stop-color="#005A9C"/>
-                  </linearGradient>
-                  <linearGradient id="engineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#e0e0e0"/>
-                    <stop offset="100%" stop-color="#9e9e9e"/>
-                  </linearGradient>
-                </defs>
-                
-                <!-- Background sky glow -->
-                <circle cx="160" cy="40" r="100" fill="radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 80%)" />
-                
-                <!-- Rear stabilizers -->
-                <path d="M 270 34 L 285 10 L 298 10 L 280 34 Z" fill="#009CDE" stroke="#005A9C" stroke-width="0.5" /> <!-- Vertical Tail Fin -->
-                <path d="M 285 10 L 298 10 L 293 3 L 287 3 Z" fill="#ffffff" /> <!-- Tail white top tip -->
-                <path d="M 268 43 L 288 47 L 292 47 L 274 43 Z" fill="#7a8b99" /> <!-- Horizontal stabilizer -->
-                
-                <!-- Main wing far side (shadowed) -->
-                <path d="M 130 45 L 110 58 L 105 58 L 128 45 Z" fill="#505f6a" />
-                
-                <!-- Fuselage -->
-                <path d="M 35 40 
-                         C 40 37, 50 33, 70 33 
-                         L 260 33 
-                         C 270 33, 280 38, 282 43 
-                         C 280 47, 268 47, 255 47 
-                         L 60 47 
-                         C 45 47, 33 44, 35 40 Z" 
-                      fill="url(#fuselageGrad)" />
-                
-                <!-- Cockpit window -->
-                <path d="M 46 36 L 52 36 L 50 39 L 44 38 Z" fill="#1c252c" />
-                
-                <!-- Aerolíneas blue accent striping on side -->
-                <path d="M 70 36.5 L 255 36.5" stroke="#ffd700" stroke-width="0.75" />
-                
-                <!-- Cabin windows (dotted pattern) -->
-                <line x1="75" y1="40" x2="245" y2="40" stroke="#1c252c" stroke-width="1.2" stroke-dasharray="1.5, 3" />
-                
-                <!-- Wing near side (swept back airliner wing) -->
-                <path d="M 140 44 L 185 64 L 195 64 L 202 61 L 158 44 Z" fill="#bdc8d0" stroke="#9da9b1" stroke-width="0.5" />
-                <path d="M 195 64 L 202 61 L 204 57 L 200 58 Z" fill="#009CDE" /> <!-- Winglet -->
-                
-                <!-- Engine Nacelle -->
-                <rect x="124" y="47" width="28" height="12" rx="6" fill="url(#engineGrad)" stroke="#7a8b99" stroke-width="0.5" />
-                <rect x="122" y="49" width="4" height="8" rx="2" fill="#1c252c" /> <!-- Engine intake -->
-                <path d="M 152 50 L 156 53 L 152 56 Z" fill="#ff453a" /> <!-- Exhaust cone hot spot -->
-                
-                <!-- Text logo overlay (subtle airline print on hull) -->
-                <text x="75" y="30" font-family="'Outfit', sans-serif" font-size="6" font-weight="bold" fill="#009CDE" opacity="0.8">AerolíneasArgentinas</text>
-              </svg>
+            <!-- Real aircraft photo -->
+            <div class="aircraft-photo-box" style="margin-top: 14px; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border); height: 140px;">
+              <img src="boeing_737.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9; filter: brightness(0.9) contrast(1.05);" />
             </div>
             
-            <div style="text-align: center; margin-top: 10px; font-size: 13px; color: var(--info-blue); font-weight: 500;">
+            <div style="text-align: center; margin-top: 14px; font-size: 13px; color: var(--info-blue); font-weight: 500;">
               Exibir todas as estatísticas da frota ➔
             </div>
           </div>
@@ -501,6 +509,32 @@
       </div>
       <div class="modal-body" style="text-align: left; display: flex; flex-direction: column; gap: 20px; padding: 20px 24px;">
         
+        <!-- Supabase Cloud Sync Section -->
+        <div id="supabase-sync-card" style="background: rgba(10, 132, 255, 0.06); border: 1px solid rgba(10, 132, 255, 0.2); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; font-family: var(--font-sans);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 20px;">☁️</span>
+              <div>
+                <strong style="color: #fff; display: block; font-size: 13px;">Sincronização Supabase Cloud</strong>
+                <span id="supabase-status-lbl" style="font-size: 11px; color: var(--text-secondary);">Desconectado (Modo Local)</span>
+              </div>
+            </div>
+            <button type="button" id="supabase-auth-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">
+              Conectar
+            </button>
+          </div>
+          
+          <!-- Hidden Login/Signup Form -->
+          <div id="supabase-auth-form" style="display: none; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 4px;">
+            <input type="email" id="supabase-email-input" placeholder="E-mail" style="background: #18181f; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-sans);" />
+            <input type="password" id="supabase-password-input" placeholder="Senha" style="background: #18181f; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-sans);" />
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" id="supabase-login-btn" style="flex: 1; background: var(--info-blue); border: none; color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Entrar</button>
+              <button type="button" id="supabase-signup-btn" style="flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Cadastrar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Segurança Local & Privacidade Banner -->
         <div style="background: rgba(184, 124, 248, 0.06); border: 1px solid rgba(184, 124, 248, 0.2); padding: 12px 16px; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start;">
           <span style="font-size: 20px;">🛡️</span>
@@ -585,10 +619,13 @@
   <!-- Mapbox GL JS Map Engine -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
           
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- Core Data and Driver Logic -->
-  <script src="mockData.js"></script>
-    <script src="customFlights.js"></script>
-    <script src="flights2024.js"></script>
-    <script src="app.js"></script>
+  <script src="mockData.js?v=1.0.2"></script>
+    <script src="customFlights.js?v=1.0.2"></script>
+    <script src="flights2024.js?v=1.0.2"></script>
+    <script src="app.js?v=1.0.2"></script>
 </body>
 </html>

@@ -4,6 +4,10 @@ const AIRLINES = window.AIRLINES;
 const PAST_FLIGHTS = window.PAST_FLIGHTS;
 const UPCOMING_FLIGHTS = window.UPCOMING_FLIGHTS;
 
+// Supabase Configuration Configuration
+const SUPABASE_URL = "SUA_URL_SUPABASE";
+const SUPABASE_ANON_KEY = "SUA_KEY_ANON_SUPABASE";
+
 class FlightyApp {
   constructor() {
     this.map = null;
@@ -112,17 +116,271 @@ class FlightyApp {
   init() {
     // Wait for DOM
     document.addEventListener("DOMContentLoaded", () => {
+      this.mapLoaded = false;
       this.initMap();
       this.initTabs();
       this.renderMyFlights();
       this.renderPassport();
+      this.initPassportEditing();
       this.initSearch();
       this.initModalEvents();
       this.updateGlobalBadge();
       
+      // Initialize Supabase cloud synchronization
+      this.initSupabase();
+
       // Plot upcoming flights by default
       this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
     });
+  }
+
+  // Initialize Supabase Connection & Event Listeners
+  async initSupabase() {
+    this.supabase = null;
+    this.currentUser = null;
+
+    if (typeof supabase === 'undefined') {
+      console.log("[Supabase] SDK não carregado no navegador.");
+      return;
+    }
+
+    if (SUPABASE_URL === "SUA_URL_SUPABASE" || SUPABASE_ANON_KEY === "SUA_KEY_ANON_SUPABASE") {
+      console.log("[Supabase] Credenciais não configuradas. Rodando em modo local offline.");
+      return;
+    }
+
+    try {
+      this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log("[Supabase] Cliente inicializado com sucesso.");
+
+      // Check current session
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (session) {
+        this.currentUser = session.user;
+        await this.syncFromSupabase();
+      }
+
+      // Configure UI handlers
+      this.initSupabaseUI();
+    } catch (e) {
+      console.error("[Supabase] Falha ao inicializar o banco na nuvem:", e);
+    }
+  }
+
+  // Setup UI elements for Supabase login and status
+  initSupabaseUI() {
+    const authBtn = document.getElementById("supabase-auth-btn");
+    const authForm = document.getElementById("supabase-auth-form");
+    const loginBtn = document.getElementById("supabase-login-btn");
+    const signupBtn = document.getElementById("supabase-signup-btn");
+    const emailInput = document.getElementById("supabase-email-input");
+    const passwordInput = document.getElementById("supabase-password-input");
+
+    this.updateCloudSyncUI();
+
+    if (authBtn && authForm) {
+      authBtn.addEventListener("click", async () => {
+        if (this.currentUser) {
+          // Logout
+          const { error } = await this.supabase.auth.signOut();
+          if (error) alert("Erro ao deslogar: " + error.message);
+          else {
+            this.currentUser = null;
+            window.location.reload();
+          }
+        } else {
+          // Toggle login form
+          const isHidden = authForm.style.display === "none";
+          authForm.style.display = isHidden ? "flex" : "none";
+          authBtn.innerText = isHidden ? "Cancelar" : "Conectar";
+        }
+      });
+    }
+
+    if (loginBtn && emailInput && passwordInput) {
+      loginBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email || !password) {
+          alert("Por favor, preencha e-mail e senha.");
+          return;
+        }
+
+        loginBtn.innerText = "Entrando...";
+        loginBtn.disabled = true;
+
+        const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+        
+        loginBtn.innerText = "Entrar";
+        loginBtn.disabled = false;
+
+        if (error) {
+          alert("Erro no login: " + error.message);
+        } else {
+          this.currentUser = data.user;
+          authForm.style.display = "none";
+          emailInput.value = "";
+          passwordInput.value = "";
+          await this.syncFromSupabase();
+          alert("Conectado à nuvem com sucesso! Seus dados foram sincronizados.");
+        }
+      });
+    }
+
+    if (signupBtn && emailInput && passwordInput) {
+      signupBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email || !password) {
+          alert("Por favor, preencha e-mail e senha.");
+          return;
+        }
+
+        signupBtn.innerText = "Cadastrando...";
+        signupBtn.disabled = true;
+
+        const { data, error } = await this.supabase.auth.signUp({ email, password });
+        
+        signupBtn.innerText = "Cadastrar";
+        signupBtn.disabled = false;
+
+        if (error) {
+          alert("Erro no cadastro: " + error.message);
+        } else {
+          alert("Cadastro efetuado! Se um e-mail de confirmação foi exigido, confirme-o no seu e-mail. Caso contrário, você já pode entrar.");
+        }
+      });
+    }
+  }
+
+  // Update UI Elements to reflect connection state
+  updateCloudSyncUI() {
+    const statusLbl = document.getElementById("supabase-status-lbl");
+    const authBtn = document.getElementById("supabase-auth-btn");
+    
+    if (statusLbl && authBtn) {
+      if (this.currentUser) {
+        statusLbl.innerHTML = `Conectado como <strong style="color: var(--success-green);">${this.currentUser.email}</strong>`;
+        authBtn.innerText = "Sair";
+        authBtn.style.background = "#ff453a";
+      } else {
+        statusLbl.innerText = "Desconectado (Modo Local)";
+        authBtn.innerText = "Conectar";
+        authBtn.style.background = "var(--info-blue)";
+      }
+    }
+  }
+
+  // Sync profile and flights from Supabase Cloud DB
+  async syncFromSupabase() {
+    if (!this.supabase || !this.currentUser) return;
+
+    try {
+      // 1. Fetch flights
+      const { data: flights, error } = await this.supabase
+        .from('flights')
+        .select('*')
+        .eq('user_id', this.currentUser.id);
+
+      if (error) throw error;
+
+      if (flights) {
+        const mappedFlights = flights.map(f => {
+          const isCompleted = f.flight_date < new Date().toISOString().split('T')[0];
+          return {
+            id: f.id,
+            flightNumber: f.flight_number,
+            airline: f.airline_code,
+            from: f.origin_airport_code,
+            to: f.destination_airport_code,
+            date: f.flight_date,
+            depTime: f.depTime || "14:00",
+            arrTime: f.arrTime || "15:45",
+            duration: f.duration_minutes,
+            distance: f.distance_km,
+            delay: f.delay || 0,
+            aircraft: f.aircraft_type || "Commercial",
+            tailNumber: f.aircraft_registration || "",
+            status: isCompleted ? "Completed" : "Scheduled"
+          };
+        });
+
+        this.pastFlights = mappedFlights.filter(f => f.status === "Completed");
+        this.upcomingFlights = mappedFlights.filter(f => f.status !== "Completed");
+
+        // Re-render
+        this.renderMyFlights();
+        this.renderPassport();
+        this.updateGlobalBadge();
+        this.clearMapRoutes();
+        this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+      }
+
+      // 2. Sync profile details
+      const { data: profile, error: profileErr } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', this.currentUser.id)
+        .single();
+
+      if (!profileErr && profile) {
+        if (profile.username) {
+          const surnameEl = document.getElementById("passport-surname");
+          const givenNameEl = document.getElementById("passport-givenname");
+          if (surnameEl && givenNameEl) {
+            const parts = profile.full_name ? profile.full_name.split(' ') : [profile.username];
+            givenNameEl.innerText = parts[0].toUpperCase();
+            surnameEl.innerText = parts.slice(1).join(' ').toUpperCase() || "";
+          }
+        }
+      }
+      
+      this.updateCloudSyncUI();
+    } catch (e) {
+      console.error("[Supabase] Falha ao sincronizar dados com a nuvem:", e);
+    }
+  }
+
+  // Upload flight insertion to Supabase Cloud DB
+  async saveFlightToSupabase(f) {
+    if (!this.supabase || !this.currentUser) return;
+
+    try {
+      const record = {
+        user_id: this.currentUser.id,
+        flight_date: f.date,
+        airline_code: f.airline,
+        airline_name: window.AIRLINES[f.airline] || f.airline,
+        flight_number: f.flightNumber,
+        origin_airport_code: f.from,
+        origin_airport_name: `Aeroporto de ${f.from}`,
+        origin_city: f.from,
+        origin_country_code: "BR", // default
+        destination_airport_code: f.to,
+        destination_airport_name: `Aeroporto de ${f.to}`,
+        destination_city: f.to,
+        destination_country_code: "BR", // default
+        aircraft_type: f.aircraft || "Commercial",
+        aircraft_registration: f.tailNumber || "",
+        distance_km: parseInt(f.distance || 0),
+        duration_minutes: parseInt(f.duration || 0),
+        seat_number: f.seat || "",
+        flight_class: "economy",
+        reason_for_travel: "leisure",
+        is_public: true
+      };
+
+      const { error } = await this.supabase
+        .from('flights')
+        .insert([record]);
+
+      if (error) throw error;
+      console.log("[Supabase] Voo salvo na nuvem com sucesso!");
+    } catch (e) {
+      console.error("[Supabase] Erro ao sincronizar voo com o banco:", e);
+    }
   }
 
   // Initialize Mapbox GL Map
@@ -299,6 +557,18 @@ class FlightyApp {
       const start = turf.point(p1);
       const end = turf.point(p2);
       const greatCircleRoute = turf.greatCircle(start, end, { npoints: 100 });
+      
+      // Corrigir Linha de Data (180°) para evitar traçados reversos horizontais gigantes
+      const coordinates = greatCircleRoute.geometry.coordinates;
+      for (let i = 1; i < coordinates.length; i++) {
+        const prevLng = coordinates[i - 1][0];
+        const currentLng = coordinates[i][0];
+        if (currentLng - prevLng > 180) {
+          coordinates[i][0] -= 360;
+        } else if (prevLng - currentLng > 180) {
+          coordinates[i][0] += 360;
+        }
+      }
 
       const sourceId = `source-${flight.id}`;
       
@@ -492,7 +762,7 @@ class FlightyApp {
     const yearsInDB = [...new Set(this.pastFlights.map(f => f.date.substring(0, 4)))].sort((a,b) => b - a);
     
     // Reconstrói dinamicamente os botões de seleção de ano na interface
-    const daysSelectors = document.querySelector(".days-selectors");
+    const daysSelectors = document.querySelector("#passport-panel .days-selectors");
     if (daysSelectors && !daysSelectors.dataset.rebuilding) {
       daysSelectors.dataset.rebuilding = "true"; // Evita loop infinito
       
@@ -537,7 +807,6 @@ class FlightyApp {
     const totalMinutes = filteredFlights.reduce((sum, f) => sum + f.duration, 0);
     const totalHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
-    const totalDelays = filteredFlights.reduce((sum, f) => sum + f.delay, 0);
 
     // Unique Airports
     const airportsSet = new Set();
@@ -552,23 +821,97 @@ class FlightyApp {
     filteredFlights.forEach(f => airlinesSet.add(f.airline));
     const uniqueAirlines = airlinesSet.size;
 
-    // Average delays logic
-    const delayedFlights = filteredFlights.filter(f => f.delay > 0);
-    const avgDelay = delayedFlights.length > 0 ? Math.round(totalDelays / delayedFlights.length) : 0;
+    // Update Text DOM Elements (preserving existing IDs)
+    const flightsCountEl = document.getElementById("pass-flights-count");
+    if (flightsCountEl) flightsCountEl.innerText = totalFlights;
+    
+    const distanceCountEl = document.getElementById("pass-distance-count");
+    if (distanceCountEl) distanceCountEl.innerText = totalDistance.toLocaleString("pt-BR") + " km";
+    
+    const timeCountEl = document.getElementById("pass-time-count");
+    if (timeCountEl) timeCountEl.innerText = `${totalHours}h ${remainingMinutes}m`;
+    
+    const airportsCountEl = document.getElementById("pass-airports-count");
+    if (airportsCountEl) airportsCountEl.innerText = uniqueAirports;
+    
+    const airlinesCountEl = document.getElementById("pass-airlines-count");
+    if (airlinesCountEl) airlinesCountEl.innerText = uniqueAirlines;
 
-    // Update Text DOM Elements
-    document.getElementById("pass-flights-count").innerText = totalFlights;
-    document.getElementById("pass-distance-count").innerText = totalDistance.toLocaleString("pt-BR") + " km";
-    document.getElementById("pass-distance-sub").innerText = (totalDistance / 40075).toFixed(1) + "x voltas à Terra";
-    document.getElementById("pass-time-count").innerText = `${totalHours}h ${remainingMinutes}m`;
-    document.getElementById("pass-airports-count").innerText = uniqueAirports;
-    document.getElementById("pass-airlines-count").innerText = uniqueAirlines;
+    // Update Visited Flags based on flight destinations
+    const airportCountries = {
+      "CNF":"🇧🇷","IGU":"🇧🇷","GIG":"🇧🇷","VCP":"🇧🇷","GRU":"🇧🇷","LDB":"🇧🇷","SDU":"🇧🇷","BSB":"🇧🇷","UNA":"🇧🇷","BYO":"🇧🇷","FOR":"🇧🇷","STM":"🇧🇷","MCZ":"🇧🇷",
+      "AEP":"🇦🇷","IGR":"🇦🇷","REL":"🇦🇷","USH":"🇦🇷","EZE":"🇦🇷","BRC":"🇦🇷",
+      "DXB":"🇦🇪","LIS":"🇵🇹","MIA":"🇺🇸","JFK":"🇺🇸","MCO":"🇺🇸","LHR":"🇬🇧","CDG":"🇫🇷","MAD":"🇪🇸","BCN":"🇪🇸","PTY":"🇵🇦","DEL":"🇮🇳","FCO":"🇮🇹","CUN":"🇲🇽"
+    };
 
-    // Delays Card Update
-    document.getElementById("pass-delays-total").innerText = totalDelays;
-    document.getElementById("pass-delays-avg").innerText = `Atrasos de voos demoraram em média ${avgDelay}m`;
+    const visitedFlags = new Set();
+    filteredFlights.forEach(f => {
+      if (airportCountries[f.from]) visitedFlags.add(airportCountries[f.from]);
+      if (airportCountries[f.to]) visitedFlags.add(airportCountries[f.to]);
+    });
 
-    // Aircraft stats
+    if (visitedFlags.size === 0) visitedFlags.add("🇧🇷"); // default flag
+
+    const flagsContainer = document.getElementById("passport-flags");
+    if (flagsContainer) {
+      flagsContainer.innerHTML = [...visitedFlags].map(flag => `<span class="flag-icon">${flag}</span>`).join('');
+    }
+
+    // Populate Airline Badges inside booklet
+    const airlineBadgesContainer = document.getElementById("passport-airline-logos");
+    if (airlineBadgesContainer) {
+      airlineBadgesContainer.innerHTML = "";
+      const visitedAirlines = [...new Set(filteredFlights.map(f => f.airline))];
+      visitedAirlines.slice(0, 5).forEach(airlineCode => {
+        const airlineInfo = AIRLINES[airlineCode] || { name: airlineCode, color: "#444" };
+        const badge = document.createElement("div");
+        badge.className = "passport-airline-logo-badge";
+        badge.style.backgroundColor = airlineInfo.color || "#333";
+        badge.innerText = airlineCode;
+        badge.title = airlineInfo.name;
+        airlineBadgesContainer.appendChild(badge);
+      });
+      if (visitedAirlines.length > 5) {
+        const badge = document.createElement("div");
+        badge.className = "passport-airline-logo-badge";
+        badge.style.backgroundColor = "#555";
+        badge.innerText = `+${visitedAirlines.length - 5}`;
+        airlineBadgesContainer.appendChild(badge);
+      }
+    }
+
+    // Initialize/Update Mapbox GL Mini-Map inside booklet
+    if (!this.passportMap && document.getElementById('passport-mini-map')) {
+      const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
+      const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
+      mapboxgl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
+                             localStorage.getItem('MAPBOX_TOKEN') || 
+                             `${tokenPart1}.${tokenPart2}`;
+
+      this.passportMap = new mapboxgl.Map({
+        container: 'passport-mini-map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [-52, -28],
+        zoom: 2,
+        interactive: false,
+        attributionControl: false
+      });
+
+      this.passportMarkers = [];
+      this.passportMapLoaded = false;
+
+      this.passportMap.on('load', () => {
+        this.passportMapLoaded = true;
+        this.drawPassportMapRoutes(filteredFlights);
+      });
+    } else if (this.passportMapLoaded) {
+      this.drawPassportMapRoutes(filteredFlights);
+    }
+
+    // Update MRZ dynamic text
+    this.updateMRZ();
+
+    // Aircraft stats (keep existing card working as extra info below passport booklet)
     const aircraftMap = {};
     filteredFlights.forEach(f => {
       aircraftMap[f.aircraft] = (aircraftMap[f.aircraft] || 0) + 1;
@@ -583,11 +926,303 @@ class FlightyApp {
       }
     });
 
-    document.getElementById("pass-most-aircraft").innerText = mostFlownAircraft;
-    document.getElementById("pass-most-aircraft-count").innerText = `${mostFlownAircraftCount} voos registrados`;
+    const passMostAircraftEl = document.getElementById("pass-most-aircraft");
+    if (passMostAircraftEl) passMostAircraftEl.innerText = mostFlownAircraft;
+    
+    const passMostAircraftCountEl = document.getElementById("pass-most-aircraft-count");
+    if (passMostAircraftCountEl) passMostAircraftCountEl.innerText = `${mostFlownAircraftCount} voos registrados`;
 
     // Render Past Flights List in Table
     this.renderPastFlightsTable(filteredFlights);
+  }
+
+  // Dynamic MRZ Code Line Generator
+  updateMRZ() {
+    const surname = (document.getElementById("passport-surname")?.innerText || "CAPO").toUpperCase().replace(/[^A-Z]/g, '');
+    const givenname = (document.getElementById("passport-givenname")?.innerText || "IAN").toUpperCase().replace(/[^A-Z]/g, '');
+    const country = (document.getElementById("passport-country-name")?.innerText || "BRASIL").toUpperCase().trim();
+    
+    const countryCodes = {
+      "BRASIL": "BRA", "BRAZIL": "BRA", "ARGENTINA": "ARG", "ARG": "ARG", "CHINA": "CHN", "USA": "USA", "ESTADOS UNIDOS": "USA",
+      "PORTUGAL": "PRT", "ESPANHA": "ESP", "SPAIN": "ESP", "FRANCE": "FRA", "FRANÇA": "FRA", "REINO UNIDO": "GBR", "UK": "GBR"
+    };
+    const countryCode = countryCodes[country] || country.substring(0, 3).toUpperCase();
+    
+    const countryCodeDisplay = document.getElementById("passport-country-code-display");
+    if (countryCodeDisplay) countryCodeDisplay.innerText = countryCode;
+
+    const passportNo = (document.getElementById("passport-num-display")?.innerText || "FP000001A").toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    const issueDateStr = document.getElementById("passport-issue-date")?.innerText || "23 JUN 2026";
+    let yy = "26";
+    let mm = "06";
+    let dd = "23";
+    const dateMatch = issueDateStr.match(/(\d{1,2})\s*([A-Za-z]+)\s*(\d{4}|\d{2})/);
+    if (dateMatch) {
+      dd = dateMatch[1].padStart(2, '0');
+      const monthMap = {
+        jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+        dez: "12", nov: "11", out: "10", set: "09", ago: "08", jul: "07", jun: "06", mai: "05", abr: "04", mar: "03", fev: "02", jan: "01"
+      };
+      const monthName = dateMatch[2].substring(0, 3).toLowerCase();
+      mm = monthMap[monthName] || "06";
+      yy = dateMatch[3].substring(dateMatch[3].length - 2);
+    }
+    const mrzDate = `${yy}${mm}${dd}`;
+
+    let line1 = `P<FP<${surname}<<${givenname}`;
+    line1 = line1.length > 44 ? line1.substring(0, 44) : line1.padEnd(44, '<');
+
+    let line2 = `${passportNo}<${mrzDate}<FLIGHTPASSPORT.APP`;
+    line2 = line2.length > 44 ? line2.substring(0, 44) : line2.padEnd(44, '<');
+
+    const mrzLine1El = document.getElementById("passport-mrz-line1");
+    const mrzLine2El = document.getElementById("passport-mrz-line2");
+    if (mrzLine1El) mrzLine1El.innerText = line1;
+    if (mrzLine2El) mrzLine2El.innerText = line2;
+  }
+
+  // Draw routes specifically on the Passport Mini-Map
+  drawPassportMapRoutes(flights) {
+    if (!this.passportMap || !this.passportMapLoaded) return;
+
+    // Clear previous markers
+    if (this.passportMarkers) {
+      this.passportMarkers.forEach(m => m.remove());
+    }
+    this.passportMarkers = [];
+
+    const map = this.passportMap;
+    const layers = ['passport-routes-glow', 'passport-routes-main'];
+    layers.forEach(layer => {
+      if (map.getLayer(layer)) map.removeLayer(layer);
+    });
+
+    if (map.getSource('passport-routes-source')) {
+      map.removeSource('passport-routes-source');
+    }
+
+    if (flights.length === 0) return;
+
+    const features = [];
+    const coordinates = [];
+
+    flights.forEach(flight => {
+      const dep = AIRPORTS[flight.from];
+      const arr = AIRPORTS[flight.to];
+      if (!dep || !arr) return;
+
+      const p1 = [dep.lng, dep.lat];
+      const p2 = [arr.lng, arr.lat];
+      coordinates.push(p1, p2);
+
+      try {
+        const start = turf.point(p1);
+        const end = turf.point(p2);
+        const greatCircle = turf.greatCircle(start, end, { npoints: 100 });
+        features.push(greatCircle);
+      } catch (err) {
+        features.push(turf.lineString([p1, p2]));
+      }
+
+      // Add map markers (red dots for airports)
+      const depEl = document.createElement('div');
+      depEl.style.width = '6px';
+      depEl.style.height = '6px';
+      depEl.style.borderRadius = '50%';
+      depEl.style.backgroundColor = '#d63031';
+      depEl.style.border = '1px solid #fff';
+
+      const depMarker = new mapboxgl.Marker({ element: depEl })
+        .setLngLat(p1)
+        .addTo(map);
+
+      const arrEl = document.createElement('div');
+      arrEl.style.width = '6px';
+      arrEl.style.height = '6px';
+      arrEl.style.borderRadius = '50%';
+      arrEl.style.backgroundColor = '#d63031';
+      arrEl.style.border = '1px solid #fff';
+
+      const arrMarker = new mapboxgl.Marker({ element: arrEl })
+        .setLngLat(p2)
+        .addTo(map);
+
+      this.passportMarkers.push(depMarker, arrMarker);
+    });
+
+    map.addSource('passport-routes-source', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: features
+      }
+    });
+
+    map.addLayer({
+      id: 'passport-routes-glow',
+      type: 'line',
+      source: 'passport-routes-source',
+      paint: {
+        'line-color': '#d63031',
+        'line-width': 3,
+        'line-opacity': 0.3
+      }
+    });
+
+    map.addLayer({
+      id: 'passport-routes-main',
+      type: 'line',
+      source: 'passport-routes-source',
+      paint: {
+        'line-color': '#d63031',
+        'line-width': 1.5,
+        'line-opacity': 0.8
+      }
+    });
+
+    // Camera adjustment bounds
+    if (coordinates.length > 0) {
+      const bounds = coordinates.reduce((b, coord) => {
+        return b.extend(coord);
+      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+      map.fitBounds(bounds, {
+        padding: 15,
+        maxZoom: 5,
+        animate: false
+      });
+    }
+  }
+
+  // Setup Passport editing and local saving
+  initPassportEditing() {
+    const fields = ["passport-surname", "passport-givenname", "passport-country-name", "passport-issue-date"];
+    
+    fields.forEach(fieldId => {
+      const val = localStorage.getItem(fieldId);
+      const el = document.getElementById(fieldId);
+      if (val && el) {
+        el.innerText = val;
+      }
+      
+      if (el) {
+        el.addEventListener("blur", () => {
+          localStorage.setItem(fieldId, el.innerText);
+          this.updateMRZ();
+        });
+        
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            el.blur();
+          }
+        });
+      }
+    });
+
+    // Custom Photo Upload
+    const photoTrigger = document.getElementById("passport-photo-trigger");
+    const photoInput = document.getElementById("passport-photo-input");
+    const photoImg = document.getElementById("passport-photo-img");
+
+    const savedPhoto = localStorage.getItem("passport-photo-dataurl");
+    if (savedPhoto && photoImg) {
+      photoImg.src = savedPhoto;
+    }
+
+    if (photoTrigger && photoInput) {
+      photoTrigger.addEventListener("click", () => {
+        photoInput.click();
+      });
+
+      photoInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target.result;
+            if (photoImg) photoImg.src = dataUrl;
+            localStorage.setItem("passport-photo-dataurl", dataUrl);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    // Dynamic Passport Number based on names
+    const updatePassportNum = () => {
+      const surnameVal = document.getElementById("passport-surname")?.innerText || "CAPO";
+      const givenVal = document.getElementById("passport-givenname")?.innerText || "IAN";
+      let hash = 0;
+      for (let i = 0; i < surnameVal.length + givenVal.length; i++) {
+        hash = (surnameVal + givenVal).charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const numDisplay = document.getElementById("passport-num-display");
+      if (numDisplay) {
+        const formattedNum = `FP${Math.abs(hash).toString().substring(0, 6).padEnd(6, '0')}A`;
+        numDisplay.innerText = formattedNum;
+      }
+    };
+
+    fields.forEach(fieldId => {
+      const el = document.getElementById(fieldId);
+      if (el) {
+        el.addEventListener("blur", () => {
+          updatePassportNum();
+          this.updateMRZ();
+        });
+      }
+    });
+
+    updatePassportNum();
+
+    // Export PNG
+    const downloadBtn = document.getElementById("download-passport-btn");
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", () => this.exportPassportAsPNG());
+    }
+
+    this.updateMRZ();
+  }
+
+  // Export passport booklet card to PNG image using html2canvas
+  exportPassportAsPNG() {
+    const card = document.getElementById("mypassport-booklet-card");
+    if (!card) return;
+
+    // Show a loading text on download button
+    const downloadBtn = document.getElementById("download-passport-btn");
+    const originalText = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = "<span>⏳</span> Renderizando Imagem...";
+    downloadBtn.disabled = true;
+
+    // Temporarily trigger Mapbox resize to map fits exactly, then export
+    if (this.passportMap) this.passportMap.resize();
+
+    setTimeout(() => {
+      html2canvas(card, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 2 // double scale for crisp retina resolution
+      }).then(canvas => {
+        const dataUrl = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = `FlightPassport_IanCapo.png`;
+        link.href = dataUrl;
+        link.click();
+
+        // Restore button state
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      }).catch(err => {
+        console.error("Export error:", err);
+        alert("Erro ao exportar passaporte. Tente novamente.");
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      });
+    }, 500);
   }
 
   // Render Past Flights Table Grid
@@ -753,6 +1388,17 @@ class FlightyApp {
     // Generate geodesic points for smooth flight tracking
     const greatCircleRoute = turf.greatCircle(start, end, { npoints: 300 });
     const coordinates = greatCircleRoute.geometry.coordinates;
+
+    // Corrigir Linha de Data (180°) para evitar saltos ou linhas horizontais na animação do avião
+    for (let i = 1; i < coordinates.length; i++) {
+      const prevLng = coordinates[i - 1][0];
+      const currentLng = coordinates[i][0];
+      if (currentLng - prevLng > 180) {
+        coordinates[i][0] -= 360;
+      } else if (prevLng - currentLng > 180) {
+        coordinates[i][0] += 360;
+      }
+    }
 
     // Add trailing route source and layer for gradient effect
     if (this.map.getLayer('layer-telemetry-trail')) this.map.removeLayer('layer-telemetry-trail');
@@ -1084,11 +1730,17 @@ class FlightyApp {
         this.pastFlights.push(newFlightObj);
         localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
         this.renderPassport();
+        if (this.supabase && this.currentUser) {
+          this.saveFlightToSupabase(newFlightObj);
+        }
         alert(`Sucesso! Voo Histórico ${flightNum} adicionado ao Passport.`);
       } else {
         this.upcomingFlights.push(newFlightObj);
         localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
         this.renderMyFlights();
+        if (this.supabase && this.currentUser) {
+          this.saveFlightToSupabase(newFlightObj);
+        }
         alert(`Sucesso! Voo Futuro ${flightNum} agendado na aba de voos.`);
       }
 
@@ -1212,6 +1864,9 @@ class FlightyApp {
         this.pastFlights.push(newFlightObj);
         localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
         this.renderPassport();
+        if (this.supabase && this.currentUser) {
+          this.saveFlightToSupabase(newFlightObj);
+        }
         alert(`🎉 Voo Histórico Importado! ${flightNum} (${from} ➔ ${to}) adicionado com sucesso ao Passport.`);
         document.querySelector('.nav-item[data-tab="passport"]').click();
       } else {
@@ -1219,6 +1874,9 @@ class FlightyApp {
         localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
         this.renderMyFlights();
         this.updateGlobalBadge();
+        if (this.supabase && this.currentUser) {
+          this.saveFlightToSupabase(newFlightObj);
+        }
         alert(`🎉 Voo Agendado Importado! ${flightNum} (${from} ➔ ${to}) adicionado com sucesso na aba de voos.`);
         document.querySelector('.nav-item[data-tab="my-flights"]').click();
       }
@@ -1233,6 +1891,10 @@ class FlightyApp {
     localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
     this.renderMyFlights();
     this.updateGlobalBadge();
+    
+    if (this.supabase && this.currentUser) {
+      this.saveFlightToSupabase(flight);
+    }
     
     // Refresh map if active
     if (this.activeTab === "my-flights") {
