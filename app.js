@@ -262,9 +262,31 @@ class FlightyApp {
     
     if (statusLbl && authBtn) {
       if (this.currentUser) {
-        statusLbl.innerHTML = `Conectado como <strong style="color: var(--success-green);">${this.currentUser.email}</strong>`;
+        statusLbl.innerHTML = `
+          Conectado como <strong style="color: var(--success-green);">${this.currentUser.email}</strong>
+          <span style="display:block; font-size: 10px; color: var(--text-secondary); margin-top: 4px; cursor: pointer; user-select: none;" 
+                id="copy-uid-btn" title="Clique para copiar o UID para o arquivo .env">
+            UID: <code style="color: var(--accent-gold); font-family: monospace;">${this.currentUser.id}</code> 📋
+          </span>
+        `;
         authBtn.innerText = "Sair";
         authBtn.style.background = "#ff453a";
+        
+        // Add copy listener with fallback
+        setTimeout(() => {
+          const copyBtn = document.getElementById("copy-uid-btn");
+          if (copyBtn) {
+            copyBtn.addEventListener("click", () => {
+              navigator.clipboard.writeText(this.currentUser.id).then(() => {
+                const oldHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = `UID: <code style="color: var(--success-green); font-family: monospace;">Copiado!</code>`;
+                setTimeout(() => {
+                  copyBtn.innerHTML = oldHTML;
+                }, 2000);
+              });
+            });
+          }
+        }, 100);
       } else {
         statusLbl.innerText = "Desconectado (Modo Local)";
         authBtn.innerText = "Conectar";
@@ -326,15 +348,39 @@ class FlightyApp {
         .single();
 
       if (!profileErr && profile) {
-        if (profile.username) {
-          const surnameEl = document.getElementById("passport-surname");
-          const givenNameEl = document.getElementById("passport-givenname");
-          if (surnameEl && givenNameEl) {
-            const parts = profile.full_name ? profile.full_name.split(' ') : [profile.username];
-            givenNameEl.innerText = parts[0].toUpperCase();
-            surnameEl.innerText = parts.slice(1).join(' ').toUpperCase() || "";
-          }
+        const surnameEl = document.getElementById("passport-surname");
+        const givenNameEl = document.getElementById("passport-givenname");
+        
+        if (profile.full_name) {
+          const parts = profile.full_name.split(' ');
+          if (givenNameEl) givenNameEl.innerText = parts[0].toUpperCase();
+          if (surnameEl) surnameEl.innerText = parts.slice(1).join(' ').toUpperCase() || "";
+        } else if (profile.username) {
+          if (givenNameEl) givenNameEl.innerText = profile.username.toUpperCase();
         }
+
+        if (profile.avatar_url) {
+          const photoImg = document.getElementById("passport-photo-img");
+          if (photoImg) photoImg.src = profile.avatar_url;
+          localStorage.setItem("passport-photo-dataurl", profile.avatar_url);
+        }
+        
+        // Dynamic Passport Number based on names
+        const updatePassportNum = () => {
+          const surnameVal = document.getElementById("passport-surname")?.innerText || "CAPO";
+          const givenVal = document.getElementById("passport-givenname")?.innerText || "IAN";
+          let hash = 0;
+          for (let i = 0; i < surnameVal.length + givenVal.length; i++) {
+            hash = (surnameVal + givenVal).charCodeAt(i) + ((hash << 5) - hash);
+          }
+          const numDisplay = document.getElementById("passport-num-display");
+          if (numDisplay) {
+            const formattedNum = `FP${Math.abs(hash).toString().substring(0, 6).padEnd(6, '0')}A`;
+            numDisplay.innerText = formattedNum;
+          }
+        };
+        updatePassportNum();
+        this.updateMRZ();
       }
       
       this.updateCloudSyncUI();
@@ -1020,6 +1066,18 @@ class FlightyApp {
         const start = turf.point(p1);
         const end = turf.point(p2);
         const greatCircle = turf.greatCircle(start, end, { npoints: 100 });
+        
+        // Corrigir Linha de Data (180°) para o mini-mapa também
+        const routeCoords = greatCircle.geometry.coordinates;
+        for (let j = 1; j < routeCoords.length; j++) {
+          const prevLng = routeCoords[j - 1][0];
+          const currentLng = routeCoords[j][0];
+          if (currentLng - prevLng > 180) {
+            routeCoords[j][0] -= 360;
+          } else if (prevLng - currentLng > 180) {
+            routeCoords[j][0] += 360;
+          }
+        }
         features.push(greatCircle);
       } catch (err) {
         features.push(turf.lineString([p1, p2]));
@@ -1095,6 +1153,30 @@ class FlightyApp {
     }
   }
 
+  // Save profile modifications (name and base64 avatar) back to Supabase
+  async saveProfileToSupabase() {
+    if (!this.supabase || !this.currentUser) return;
+    try {
+      const surname = (document.getElementById("passport-surname")?.innerText || "").trim();
+      const givenname = (document.getElementById("passport-givenname")?.innerText || "").trim();
+      const fullName = `${givenname} ${surname}`.trim();
+      const avatarUrl = localStorage.getItem("passport-photo-dataurl") || "";
+
+      const { error } = await this.supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          avatar_url: avatarUrl
+        })
+        .eq('id', this.currentUser.id);
+
+      if (error) throw error;
+      console.log("[Supabase] Perfil atualizado na nuvem com sucesso!");
+    } catch (e) {
+      console.error("[Supabase] Erro ao sincronizar perfil com a nuvem:", e);
+    }
+  }
+
   // Setup Passport editing and local saving
   initPassportEditing() {
     const fields = ["passport-surname", "passport-givenname", "passport-country-name", "passport-issue-date"];
@@ -1110,6 +1192,9 @@ class FlightyApp {
         el.addEventListener("blur", () => {
           localStorage.setItem(fieldId, el.innerText);
           this.updateMRZ();
+          if (this.supabase && this.currentUser) {
+            this.saveProfileToSupabase();
+          }
         });
         
         el.addEventListener("keydown", (e) => {
@@ -1144,6 +1229,9 @@ class FlightyApp {
             const dataUrl = event.target.result;
             if (photoImg) photoImg.src = dataUrl;
             localStorage.setItem("passport-photo-dataurl", dataUrl);
+            if (this.supabase && this.currentUser) {
+              this.saveProfileToSupabase();
+            }
           };
           reader.readAsDataURL(file);
         }
