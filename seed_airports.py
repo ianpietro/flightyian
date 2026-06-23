@@ -64,13 +64,34 @@ def main():
     df_filtrado = df[df.apply(filtrar_escopo, axis=1)].copy()
     print(f"[+] Total de aeroportos que passaram no filtro: {len(df_filtrado)}")
 
-    # Mapear as colunas do CSV para a estrutura da tabela public.airports
-    print("[+] Formatando dados para o banco...")
-    df_filtrado['iata_code'] = df_filtrado['iata_code'].fillna('')
-    df_filtrado['municipality'] = df_filtrado['municipality'].fillna('Unknown City')
-    df_filtrado['iso_country'] = df_filtrado['iso_country'].fillna('')
-    df_filtrado['continent'] = df_filtrado['continent'].fillna('')
+    # 1. Filtrar idents com mais de 4 caracteres (não são ICAO válidos e estouram limite do banco)
+    df_filtrado = df_filtrado[df_filtrado['ident'].str.len() <= 4]
+    
+    # 2. Limpar e padronizar IATA code (exatamente 3 caracteres)
+    df_filtrado['iata_code'] = df_filtrado['iata_code'].fillna('').str.strip().str.upper()
+    df_filtrado.loc[df_filtrado['iata_code'].str.len() != 3, 'iata_code'] = ''
 
+    # 3. Tratar nulos e valores padrão
+    df_filtrado['municipality'] = df_filtrado['municipality'].fillna('Unknown City')
+    df_filtrado['iso_country'] = df_filtrado['iso_country'].fillna('XX').str.strip().str.upper()
+    df_filtrado['continent'] = df_filtrado['continent'].fillna('NA').str.strip().str.upper()
+    df_filtrado.loc[df_filtrado['continent'].str.len() != 2, 'continent'] = 'NA'
+
+    # 4. Remover duplicatas de ICAO (ident) dando preferência a large_airport (hubs principais)
+    df_filtrado = df_filtrado.sort_values(by=['ident', 'type'], ascending=[True, False])
+    df_filtrado = df_filtrado.drop_duplicates(subset=['ident'], keep='first')
+
+    # 5. Remover duplicatas de IATA para evitar violações de chave única, preferindo large_airport
+    df_with_iata = df_filtrado[df_filtrado['iata_code'] != ''].copy()
+    df_no_iata = df_filtrado[df_filtrado['iata_code'] == ''].copy()
+    
+    df_with_iata = df_with_iata.sort_values(by=['iata_code', 'type'], ascending=[True, False])
+    df_with_iata = df_with_iata.drop_duplicates(subset=['iata_code'], keep='first')
+    
+    df_filtrado = pd.concat([df_with_iata, df_no_iata], ignore_index=True)
+    print(f"[+] Aeroportos limpos e deduplicados para inserção: {len(df_filtrado)}")
+
+    # Mapear as colunas do CSV para a estrutura da tabela public.airports
     dados_formatados = []
     for _, row in df_filtrado.iterrows():
         dados_formatados.append({
@@ -83,19 +104,19 @@ def main():
             "continent": row["continent"],
             "latitude": float(row["latitude_deg"]),
             "longitude": float(row["longitude_deg"]),
-            "timezone": None,  # Pode ser populado futuramente se necessário
+            "timezone": None,
             "is_major_hub": row["type"] == "large_airport"
         })
 
-    # Fazer upload em blocos (batching) de 500 registros para evitar sobrecarga ou timeouts da API
+    # Fazer upload em blocos (batching) de 500 registros usando upsert
     batch_size = 500
     total_records = len(dados_formatados)
-    print(f"[+] Iniciando envio de {total_records} aeroportos para o Supabase em blocos de {batch_size}...")
+    print(f"[+] Iniciando envio de {total_records} aeroportos para o Supabase em blocos de {batch_size} (UPSERT)...")
 
     for i in range(0, total_records, batch_size):
         batch = dados_formatados[i:i+batch_size]
         try:
-            supabase.table("airports").insert(batch).execute()
+            supabase.table("airports").upsert(batch).execute()
             print(f"[✓] Progresso: {min(i + batch_size, total_records)}/{total_records} enviados.")
         except Exception as e:
             print(f"[-] Erro ao enviar bloco {i} a {i+batch_size}: {e}")

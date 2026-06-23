@@ -1448,11 +1448,19 @@ class FlightyApp {
       alertsSection.style.display = "block";
       progressSection.style.display = "block";
 
+      // Dynamically initialize inbound tracking details for simulated or synced flights
+      if (!flight.inboundFlight && flight.flightNumber) {
+        flight.inboundFlight = this.generateDynamicInbound(flight);
+      }
+      if (!flight.alerts) {
+        flight.alerts = this.generateDynamicAlerts(flight);
+      }
+
       // Render alerts
       alertsSection.innerHTML = `
         <div class="pilot-weather-header" style="color: var(--info-blue)">Alertas Pro & Status Inbound</div>
         ${flight.inboundFlight ? `
-          <div style="background: rgba(10, 132, 255, 0.08); border: 1px solid rgba(10, 132, 255, 0.2); padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:8px;">
+          <div style="background: rgba(26, 184, 160, 0.08); border: 1px solid rgba(26, 184, 160, 0.2); padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:8px;">
             ℹ️ <strong>Rastreamento Inbound (${flight.inboundFlight.flightNumber}):</strong> Aeronave vindo de ${flight.inboundFlight.origin} está ${flight.inboundFlight.status} (ETA: ${flight.inboundFlight.eta}).
           </div>
         ` : ''}
@@ -1639,41 +1647,211 @@ class FlightyApp {
     animate();
   }
 
-  // Parse METAR details for standard pilots (Pro Feature)
-  generatePilotWeather(flight) {
-    const rawBox = document.getElementById("raw-metar");
-    const decodedBox = document.getElementById("decoded-metar");
+  // METAR Real — API pública aviationweather.gov (sem chave, gratuita)
+  async generatePilotWeather(flight) {
+    const rawBox     = document.getElementById('raw-metar');
+    const decodedBox = document.getElementById('decoded-metar');
+    if (!rawBox || !decodedBox) return;
 
-    const depCode = flight.from;
-    const arrCode = flight.to;
+    rawBox.innerHTML     = '<span style="opacity:0.5">Carregando METAR real...</span>';
+    decodedBox.innerHTML = '';
 
-    // Simulated high-fidelity METAR strings for local airports
-    const mockMETARs = {
-      "SDU": `METAR SBRJ 222300Z 18005KT 9999 FEW020 22/19 Q1016 NOSIG`,
-      "CGH": `METAR SBSP 222300Z 16008KT 8000 -RA BKN015 OVC070 19/17 Q1018 TEMPO TSRA`,
-      "VCP": `METAR SBKP 222300Z 15006KT 9999 FEW025 SCT100 20/16 Q1017`,
-      "GIG": `METAR SBGL 222300Z 17006KT 9999 FEW022 SCT090 23/18 Q1016`,
-      "BEL": `METAR SBBE 222300Z 08004KT 9999 SCT018 SCT080 27/24 Q1011`,
-      "GRU": `METAR SBGR 222300Z 16010KT 9999 FEW020 BKN080 18/15 Q1018`,
-      "AEP": `METAR SABE 222300Z 13009KT 9000 NSC 15/11 Q1021`,
-      "IGR": `METAR SARI 222300Z 11005KT 9999 FEW030 18/14 Q1019`,
-      "LDB": `METAR SBLO 222300Z 16006KT 9999 SCT030 21/17 Q1018`,
-      "CNF": `METAR SBCF 222300Z 09008KT 9999 BKN035 22/16 Q1016`,
-      "IGU": `METAR SBFI 222300Z 12006KT 9999 SCT025 20/15 Q1019`,
-      "REL": `METAR SAVT 222300Z 24012KT 9999 SKC 09/02 Q1015`,
-      "USH": `METAR SAWO 222300Z 26018G25KT 6000 -SHSN BKN012 SCT025 01/-04 Q0998`
+    // Mapa IATA → ICAO para os aeroportos do usuário
+    const IATA_TO_ICAO = {
+      SDU: 'SBRJ', CGH: 'SBSP', VCP: 'SBKP', GIG: 'SBGL', BEL: 'SBBE',
+      GRU: 'SBGR', LDB: 'SBLO', CNF: 'SBCF', IGU: 'SBFI', BSB: 'SBBR',
+      FOR: 'SBFZ', MCZ: 'SBMO', STM: 'SBSN', MCO: 'KMCO', MIA: 'KMIA',
+      JFK: 'KJFK', LHR: 'EGLL', CDG: 'LFPG', MAD: 'LEMD', LIS: 'LPPT',
+      AEP: 'SABE', EZE: 'SAEZ', REL: 'SAVT', USH: 'SAWH', IGR: 'SARI',
+      BRC: 'SANC', PTY: 'MPTO', CUN: 'MMUN', DXB: 'OMDB', DEL: 'VIDP',
+      FCO: 'LIRF', BCN: 'LEBL', UNA: 'SNVB', BYO: 'SSNW'
     };
 
-    const depMETAR = mockMETARs[depCode] || `METAR SB${depCode} 222300Z AUTO 00000KT 9999 CLR 20/15 Q1013`;
-    const arrMETAR = mockMETARs[arrCode] || `METAR SB${arrCode} 222300Z AUTO 00000KT 9999 CLR 20/15 Q1013`;
+    const depICAO = IATA_TO_ICAO[flight.from] || ('SB' + flight.from);
+    const arrICAO = IATA_TO_ICAO[flight.to]   || ('SB' + flight.to);
+    const ids     = `${depICAO},${arrICAO}`;
 
-    rawBox.innerHTML = `<strong>${depCode}:</strong> ${depMETAR}<br><br><strong>${arrCode}:</strong> ${arrMETAR}`;
+    try {
+      const url = `https://aviationweather.gov/api/data/metar?ids=${ids}&format=json&hours=2`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-    // Simple decoder matching human sentences
-    decodedBox.innerHTML = `
-      <strong>Condições em ${depCode}:</strong> Ventos fracos de 5 nós. Visibilidade excelente (+10km). Temperatura de 22°C. Altímetro 1016 hPa. Tempo estável.<br><br>
-      <strong>Condições em ${arrCode}:</strong> ${arrCode === 'CGH' ? 'Chuva fraca relatada (-RA). Teto nublado a 1500 pés. Temperatura amena de 19°C. Possibilidade de trovoadas temporárias (TSRA).' : 'Excelente teto operacional. Ventos fracos. Sem previsão de alterações significativas.'}
-    `;
+      if (!data || data.length === 0) {
+        rawBox.innerHTML = '<span style="color:var(--warning-red)">METAR indisponível para estes aeroportos.</span>';
+        return;
+      }
+
+      // Render raw strings
+      rawBox.innerHTML = data.map(m =>
+        `<strong>${m.stationId || m.icaoId}:</strong> ${m.rawOb || m.rawObs || 'N/D'}`
+      ).join('<br><br>');
+
+      // Decode each METAR into human-readable Portuguese
+      const decoded = data.map(m => {
+        const station  = m.stationId || m.icaoId || '?';
+        const wdir     = m.wdir != null ? `${m.wdir}°` : 'variável';
+        const wspd     = m.wspd != null ? `${m.wspd} nós` : '0 nós';
+        
+        // Accurate visibility parsing and conversion
+        let vis = 'N/D';
+        if (m.visib != null) {
+          const visMiles = parseFloat(m.visib);
+          const visKm = visMiles * 1.60934;
+          if (visMiles >= 10 || visMiles >= 9.9) {
+            vis = '+10 km';
+          } else if (visKm < 1) {
+            vis = `${Math.round(visKm * 1000)} m`;
+          } else {
+            vis = `${visKm.toFixed(1)} km`;
+          }
+        }
+
+        const temp     = m.temp   != null ? `${m.temp}°C`   : 'N/D';
+        const dewp     = m.dewp   != null ? `${m.dewp}°C`   : 'N/D';
+        const altim    = m.altim  != null ? `${m.altim} hPa` : 'N/D';
+        const wxStr    = m.wxString || m.wx || '';
+        
+        // Translated cloud coverage descriptions
+        const coverMap = { 
+          FEW: 'Poucas nuvens', 
+          SCT: 'Nuvens esparsas', 
+          BKN: 'Muito nublado', 
+          OVC: 'Encoberto', 
+          CLR: 'Céu limpo', 
+          SKC: 'Céu limpo' 
+        };
+        const skyStr   = (m.clouds || []).map(c =>
+          `${coverMap[c.cover] || c.cover}${c.base != null ? ' a ' + c.base + ' ft' : ''}`).join(', ') || 'Céu limpo';
+
+        // Precise weather condition translation
+        const directMap = {
+          'RA': 'Chuva', '+RA': 'Chuva forte', '-RA': 'Chuva fraca',
+          'TSRA': 'Trovoada com chuva', '+TSRA': 'Trovoada com chuva forte', '-TSRA': 'Trovoada com chuva fraca',
+          'SHRA': 'Pancadas de chuva', '+SHRA': 'Pancadas de chuva forte', '-SHRA': 'Pancadas de chuva fraca',
+          'DZ': 'Chuvisco', '-DZ': 'Chuvisco fraco', '+DZ': 'Chuvisco forte',
+          'SN': 'Neve', '-SN': 'Neve fraca', '+SN': 'Neve forte',
+          'TS': 'Trovoada', 'FG': 'Nevoeiro', 'BR': 'Névoa úmida', 'HZ': 'Névoa seca'
+        };
+        const wxPt = wxStr ? wxStr.split(' ').map(w => directMap[w] || w).join(', ') : 'Sem precipitação';
+
+        return `<strong>▸ ${station}:</strong> ` +
+          `Vento ${wdir} a ${wspd}. ` +
+          `Visibilidade ${vis}. ` +
+          `${wxPt}. ` +
+          `Nuvens: ${skyStr}. ` +
+          `Temp ${temp} / Orv ${dewp}. ` +
+          `QNH ${altim}.`;
+      }).join('<br><br>');
+
+      decodedBox.innerHTML = decoded;
+
+    } catch (err) {
+      rawBox.innerHTML = `<span style="color:var(--warning-red)">Erro ao buscar METAR: ${err.message}</span>`;
+      console.warn('METAR fetch error:', err);
+    }
+  }
+
+  // Generates a realistic inbound flight based on current flight details
+  generateDynamicInbound(flight) {
+    let inboundNumber = "";
+    if (flight.flightNumber) {
+      const numPart = flight.flightNumber.replace(/[^0-9]/g, '');
+      const alphaPart = flight.flightNumber.replace(/[0-9\s]/g, '');
+      if (numPart) {
+        const num = parseInt(numPart);
+        inboundNumber = `${alphaPart || flight.airline || 'AD'} ${num % 2 === 0 ? num + 1 : num - 1}`;
+      } else {
+        inboundNumber = `${flight.airline || 'AD'} 2026`;
+      }
+    } else {
+      inboundNumber = `${flight.airline || 'AD'} 2026`;
+    }
+
+    const hubs = {
+      AD: ['VCP', 'CNF', 'REC'],
+      G3: ['GRU', 'CGH', 'BSB'],
+      LA: ['GRU', 'CGH', 'BSB'],
+      JJ: ['GRU', 'CGH', 'BSB'],
+      AR: ['AEP', 'EZE']
+    };
+    const airlineHubs = hubs[flight.airline] || ['GRU', 'GIG', 'BSB'];
+    let origin = airlineHubs[0];
+    if (origin === flight.from) {
+      origin = airlineHubs[1] || 'GRU';
+    }
+
+    let eta = "08:15";
+    if (flight.depTime) {
+      const parts = flight.depTime.split(':');
+      if (parts.length === 2) {
+        let h = parseInt(parts[0]);
+        let m = parseInt(parts[1]) - 50;
+        if (m < 0) {
+          m += 60;
+          h -= 1;
+        }
+        if (h < 0) {
+          h += 24;
+        }
+        eta = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      }
+    }
+
+    let status = "No horário";
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (flight.date === todayStr) {
+      const parts = (flight.depTime || "12:00").split(':');
+      const depHour = parseInt(parts[0]);
+      const currentHour = new Date().getHours();
+      if (currentHour < depHour - 2) {
+        status = "No horário";
+      } else if (currentHour < depHour - 1) {
+        status = "Em voo";
+      } else {
+        status = "Pousou";
+      }
+    }
+
+    return {
+      flightNumber: inboundNumber,
+      status: status,
+      origin: origin,
+      eta: eta
+    };
+  }
+
+  // Generates realistic alerts based on the flight and its inbound status
+  generateDynamicAlerts(flight) {
+    const alerts = [];
+    const randGate = `${Math.floor(Math.random() * 20) + 1}${['A', 'B', 'C', ''][Math.floor(Math.random() * 4)]}`;
+    const gate = flight.gate || randGate;
+    
+    alerts.push({
+      type: "gate",
+      text: `Portão de embarque definido para ${gate} no aeroporto ${flight.from}.`
+    });
+
+    alerts.push({
+      type: "weather",
+      text: `Previsão de teto operacional favorável em ${flight.to} no horário de pouso.`
+    });
+
+    if (flight.inboundFlight) {
+      if (flight.inboundFlight.status === "Atrasado" || flight.inboundFlight.status === "Delayed") {
+        alerts.push({
+          type: "delay",
+          text: `Alerta Pro: Aeronave vindo de ${flight.inboundFlight.origin} com atraso acumulado.`
+        });
+      } else if (flight.inboundFlight.status === "Em voo") {
+        alerts.push({
+          type: "info",
+          text: `Aeronave de chegada está em voo vindo de ${flight.inboundFlight.origin} (ETA: ${flight.inboundFlight.eta}).`
+        });
+      }
+    }
+
+    return alerts;
   }
 
   // Handle Close Drawer actions
