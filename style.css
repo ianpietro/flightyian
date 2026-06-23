@@ -630,6 +630,7 @@ body {
   position: relative;
   cursor: pointer;
   transition: transform 0.2s;
+  flex-shrink: 0; /* Prevent flex shrink in scrollable tab panels */
 }
 
 .aircraft-stat-card:active {
@@ -1267,6 +1268,7 @@ body {
   position: relative;
   overflow: hidden;
   margin-bottom: 20px;
+  flex-shrink: 0; /* Prevent flex shrink in scrollable tab panels */
 }
 
 .passport-flags-row {
@@ -1289,10 +1291,12 @@ body {
 }
 
 #passport-mini-map {
-  height: 150px;
+  height: 175px;
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(0,0,0,0.08);
+  display: block;
+  background: #e8f0e8;
 }
 
 .passport-divider {

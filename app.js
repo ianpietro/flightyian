@@ -926,33 +926,8 @@ class FlightyApp {
       }
     }
 
-    // Initialize/Update Mapbox GL Mini-Map inside booklet
-    if (!this.passportMap && document.getElementById('passport-mini-map')) {
-      const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
-      const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
-      mapboxgl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
-                             localStorage.getItem('MAPBOX_TOKEN') || 
-                             `${tokenPart1}.${tokenPart2}`;
-
-      this.passportMap = new mapboxgl.Map({
-        container: 'passport-mini-map',
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [-52, -28],
-        zoom: 2,
-        interactive: false,
-        attributionControl: false
-      });
-
-      this.passportMarkers = [];
-      this.passportMapLoaded = false;
-
-      this.passportMap.on('load', () => {
-        this.passportMapLoaded = true;
-        this.drawPassportMapRoutes(filteredFlights);
-      });
-    } else if (this.passportMapLoaded) {
-      this.drawPassportMapRoutes(filteredFlights);
-    }
+    // Initialize/Update Canvas Mini-Map inside passport booklet
+    this.drawPassportCanvasMap(filteredFlights);
 
     // Update MRZ dynamic text
     this.updateMRZ();
@@ -1029,128 +1004,227 @@ class FlightyApp {
   }
 
   // Draw routes specifically on the Passport Mini-Map
-  drawPassportMapRoutes(flights) {
-    if (!this.passportMap || !this.passportMapLoaded) return;
+  // ─── Canvas 2D World Map for Passport Booklet (no Mapbox token needed) ───
+  async drawPassportCanvasMap(flights) {
+    const canvas = document.getElementById('passport-mini-map');
+    if (!canvas) return;
 
-    // Clear previous markers
-    if (this.passportMarkers) {
-      this.passportMarkers.forEach(m => m.remove());
+    // Size canvas to its CSS pixel dimensions
+    const W = canvas.offsetWidth || 520;
+    const H = canvas.offsetHeight || 175;
+    canvas.width = W * 2;  // retina
+    canvas.height = H * 2;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2); // retina scaling
+
+    // ── Background ──────────────────────────────────────────────
+    ctx.fillStyle = '#dce8dc';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, 10);
+    ctx.fill();
+
+    // ── Equirectangular projection helpers ──────────────────────
+    const pad = 8;
+    const projX = lng => pad + ((lng + 180) / 360) * (W - pad * 2);
+    const projY = lat => pad + ((90 - lat) / 180) * (H - pad * 2);
+
+    // ── Draw world land polygons from Natural Earth GeoJSON ─────
+    const drawGeo = (geoJson) => {
+      ctx.fillStyle = '#b8ccb8';
+      ctx.strokeStyle = '#92aa92';
+      ctx.lineWidth = 0.3;
+
+      const drawPolygon = (rings) => {
+        ctx.beginPath();
+        rings[0].forEach(([lng, lat], i) => {
+          if (i === 0) ctx.moveTo(projX(lng), projY(lat));
+          else ctx.lineTo(projX(lng), projY(lat));
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      };
+
+      geoJson.features.forEach(feature => {
+        const g = feature.geometry;
+        if (!g) return;
+        if (g.type === 'Polygon') {
+          drawPolygon(g.coordinates);
+        } else if (g.type === 'MultiPolygon') {
+          g.coordinates.forEach(poly => drawPolygon(poly));
+        }
+      });
+    };
+
+    // ── Fetch GeoJSON (cache in memory) ─────────────────────────
+    if (!window._passportWorldGeo) {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topo = await res.json();
+        // Convert TopoJSON → GeoJSON using browser-compatible topojson-client
+        if (window.topojson) {
+          window._passportWorldGeo = window.topojson.feature(topo, topo.objects.countries);
+        } else {
+          // Fallback: fetch pre-converted GeoJSON
+          const r2 = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson');
+          window._passportWorldGeo = await r2.json();
+        }
+      } catch(e) {
+        window._passportWorldGeo = null;
+      }
     }
-    this.passportMarkers = [];
 
-    const map = this.passportMap;
-    const layers = ['passport-routes-glow', 'passport-routes-main'];
-    layers.forEach(layer => {
-      if (map.getLayer(layer)) map.removeLayer(layer);
+    if (window._passportWorldGeo) {
+      drawGeo(window._passportWorldGeo);
+    } else {
+      // Minimal fallback: just draw graticule lines
+      ctx.strokeStyle = 'rgba(0,80,0,0.15)';
+      ctx.lineWidth = 0.5;
+      for (let lat = -60; lat <= 60; lat += 30) {
+        ctx.beginPath();
+        ctx.moveTo(projX(-180), projY(lat));
+        ctx.lineTo(projX(180), projY(lat));
+        ctx.stroke();
+      }
+      for (let lng = -150; lng <= 150; lng += 60) {
+        ctx.beginPath();
+        ctx.moveTo(projX(lng), projY(90));
+        ctx.lineTo(projX(lng), projY(-90));
+        ctx.stroke();
+      }
+    }
+
+    // ── Compute bounding box of all flight coords ───────────────
+    const allCoords = [];
+    const validFlights = flights.filter(f => AIRPORTS[f.from] && AIRPORTS[f.to]);
+
+    validFlights.forEach(f => {
+      allCoords.push([AIRPORTS[f.from].lng, AIRPORTS[f.from].lat]);
+      allCoords.push([AIRPORTS[f.to].lng, AIRPORTS[f.to].lat]);
     });
 
-    if (map.getSource('passport-routes-source')) {
-      map.removeSource('passport-routes-source');
+    let projXFn = projX;
+    let projYFn = projY;
+
+    if (allCoords.length > 0) {
+      // Determine tight bounding box with padding
+      const lngs = allCoords.map(c => c[0]);
+      const lats = allCoords.map(c => c[1]);
+      const minLng = Math.min(...lngs) - 15;
+      const maxLng = Math.max(...lngs) + 15;
+      const minLat = Math.min(...lats) - 10;
+      const maxLat = Math.max(...lats) + 10;
+
+      // Local projection zoomed into bounding box
+      projXFn = lng => pad + ((lng - minLng) / (maxLng - minLng)) * (W - pad * 2);
+      projYFn = lat => pad + ((maxLat - lat) / (maxLat - minLat)) * (H - pad * 2);
+
+      // Redraw background + land with zoomed projection
+      ctx.fillStyle = '#dce8dc';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, W, H, 10);
+      ctx.fill();
+
+      if (window._passportWorldGeo) {
+        const drawGeoZoomed = (geoJson) => {
+          ctx.fillStyle = '#b8ccb8';
+          ctx.strokeStyle = '#92aa92';
+          ctx.lineWidth = 0.3;
+          const drawPoly = (rings) => {
+            ctx.beginPath();
+            rings[0].forEach(([lng, lat], i) => {
+              const x = projXFn(lng), y = projYFn(lat);
+              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          };
+          geoJson.features.forEach(feat => {
+            const g = feat.geometry;
+            if (!g) return;
+            if (g.type === 'Polygon') drawPoly(g.coordinates);
+            else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => drawPoly(p));
+          });
+        };
+        drawGeoZoomed(window._passportWorldGeo);
+      }
     }
 
-    if (flights.length === 0) return;
-
-    const features = [];
-    const coordinates = [];
-
-    flights.forEach(flight => {
-      const dep = AIRPORTS[flight.from];
-      const arr = AIRPORTS[flight.to];
-      if (!dep || !arr) return;
-
+    // ── Draw great-circle routes ────────────────────────────────
+    validFlights.forEach(f => {
+      const dep = AIRPORTS[f.from];
+      const arr = AIRPORTS[f.to];
       const p1 = [dep.lng, dep.lat];
       const p2 = [arr.lng, arr.lat];
-      coordinates.push(p1, p2);
 
+      // Generate great circle points
+      let points;
       try {
-        const start = turf.point(p1);
-        const end = turf.point(p2);
-        const greatCircle = turf.greatCircle(start, end, { npoints: 100 });
-        
-        // Corrigir Linha de Data (180°) para o mini-mapa também
-        const routeCoords = greatCircle.geometry.coordinates;
-        for (let j = 1; j < routeCoords.length; j++) {
-          const prevLng = routeCoords[j - 1][0];
-          const currentLng = routeCoords[j][0];
-          if (currentLng - prevLng > 180) {
-            routeCoords[j][0] -= 360;
-          } else if (prevLng - currentLng > 180) {
-            routeCoords[j][0] += 360;
-          }
+        const gc = turf.greatCircle(turf.point(p1), turf.point(p2), { npoints: 80 });
+        points = gc.geometry.coordinates;
+        // Fix antimeridian
+        for (let i = 1; i < points.length; i++) {
+          const diff = points[i][0] - points[i - 1][0];
+          if (diff > 180) points[i][0] -= 360;
+          else if (diff < -180) points[i][0] += 360;
         }
-        features.push(greatCircle);
-      } catch (err) {
-        features.push(turf.lineString([p1, p2]));
+      } catch(e) {
+        points = [p1, p2];
       }
 
-      // Add map markers (red dots for airports)
-      const depEl = document.createElement('div');
-      depEl.style.width = '6px';
-      depEl.style.height = '6px';
-      depEl.style.borderRadius = '50%';
-      depEl.style.backgroundColor = '#d63031';
-      depEl.style.border = '1px solid #fff';
-
-      const depMarker = new mapboxgl.Marker({ element: depEl })
-        .setLngLat(p1)
-        .addTo(map);
-
-      const arrEl = document.createElement('div');
-      arrEl.style.width = '6px';
-      arrEl.style.height = '6px';
-      arrEl.style.borderRadius = '50%';
-      arrEl.style.backgroundColor = '#d63031';
-      arrEl.style.border = '1px solid #fff';
-
-      const arrMarker = new mapboxgl.Marker({ element: arrEl })
-        .setLngLat(p2)
-        .addTo(map);
-
-      this.passportMarkers.push(depMarker, arrMarker);
-    });
-
-    map.addSource('passport-routes-source', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: features
-      }
-    });
-
-    map.addLayer({
-      id: 'passport-routes-glow',
-      type: 'line',
-      source: 'passport-routes-source',
-      paint: {
-        'line-color': '#d63031',
-        'line-width': 3,
-        'line-opacity': 0.3
-      }
-    });
-
-    map.addLayer({
-      id: 'passport-routes-main',
-      type: 'line',
-      source: 'passport-routes-source',
-      paint: {
-        'line-color': '#d63031',
-        'line-width': 1.5,
-        'line-opacity': 0.8
-      }
-    });
-
-    // Camera adjustment bounds
-    if (coordinates.length > 0) {
-      const bounds = coordinates.reduce((b, coord) => {
-        return b.extend(coord);
-      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-
-      map.fitBounds(bounds, {
-        padding: 15,
-        maxZoom: 5,
-        animate: false
+      // Draw route glow
+      ctx.beginPath();
+      points.forEach(([lng, lat], i) => {
+        const x = projXFn(lng), y = projYFn(lat);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
-    }
+      ctx.strokeStyle = 'rgba(180,30,30,0.2)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Draw route line (dashed, red)
+      ctx.beginPath();
+      points.forEach(([lng, lat], i) => {
+        const x = projXFn(lng), y = projYFn(lat);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = '#c0392b';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // ── Draw airport dots ───────────────────────────────────────
+    const drawnAirports = new Set();
+    validFlights.forEach(f => {
+      [f.from, f.to].forEach(code => {
+        if (drawnAirports.has(code)) return;
+        drawnAirports.add(code);
+        const ap = AIRPORTS[code];
+        const x = projXFn(ap.lng);
+        const y = projYFn(ap.lat);
+        // White halo
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        // Red dot
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#c0392b';
+        ctx.fill();
+      });
+    });
+
+    // ── Attribution ─────────────────────────────────────────────
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.font = '7px Outfit, sans-serif';
+    ctx.fillText('© Natural Earth', 4, H - 3);
   }
 
   // Save profile modifications (name and base64 avatar) back to Supabase

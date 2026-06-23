@@ -3,24 +3,24 @@
 
 window.IMPORTED_FLIGHTS = [
   {
-    "id": "email_parsed_1779566323_AEP_REL",
+    "id": "email_parsed_1782245196_UNA_AEP",
     "flightNumber": "AR 1892",
     "airline": "AR",
-    "from": "AEP",
-    "to": "REL",
+    "from": "UNA",
+    "to": "AEP",
     "date": "2025-10-28",
     "depTime": "11:30",
     "arrTime": "12:45",
-    "duration": 171,
-    "distance": 1129,
-    "delay": 0,
+    "duration": 391,
+    "distance": 2886,
+    "delay": 9,
     "aircraft": "B737-800",
-    "tailNumber": "PR-YV4",
+    "tailNumber": "PR-YV6",
     "status": "Completed",
     "bookingCode": "FFTISZ"
   },
   {
-    "id": "email_parsed_1779566324_IGR_AEP",
+    "id": "email_parsed_1782245196_IGR_AEP",
     "flightNumber": "FO 5101",
     "airline": "FO",
     "from": "IGR",
@@ -37,7 +37,7 @@ window.IMPORTED_FLIGHTS = [
     "bookingCode": "SGPTVR"
   },
   {
-    "id": "email_parsed_1779640771_BEL_GRU",
+    "id": "email_parsed_1782245219_BEL_GRU",
     "flightNumber": "G3 1543",
     "airline": "G3",
     "from": "BEL",
@@ -71,7 +71,7 @@ window.IMPORTED_FLIGHTS = [
     "bookingCode": "CHEGOU"
   },
   {
-    "id": "email_parsed_1779640778_BEL_GRU",
+    "id": "email_parsed_1782245228_BEL_GRU",
     "flightNumber": "G3 1543",
     "airline": "G3",
     "from": "BEL",
@@ -88,7 +88,7 @@ window.IMPORTED_FLIGHTS = [
     "bookingCode": "ANCNIG"
   },
   {
-    "id": "email_parsed_1779640783_USH_AEP",
+    "id": "email_parsed_1782245241_USH_AEP",
     "flightNumber": "AR 1895",
     "airline": "AR",
     "from": "USH",
@@ -105,7 +105,7 @@ window.IMPORTED_FLIGHTS = [
     "bookingCode": "MFEQHG"
   },
   {
-    "id": "email_parsed_1779640791_GIG_GRU",
+    "id": "email_parsed_1782245259_GIG_GRU",
     "flightNumber": "G3 1099",
     "airline": "G3",
     "from": "GIG",
@@ -122,7 +122,7 @@ window.IMPORTED_FLIGHTS = [
     "bookingCode": "UMQBZS"
   },
   {
-    "id": "email_parsed_1779640794_GIG_FOR",
+    "id": "email_parsed_1782245265_GIG_FOR",
     "flightNumber": "G3 2176",
     "airline": "G3",
     "from": "GIG",
@@ -130,11 +130,11 @@ window.IMPORTED_FLIGHTS = [
     "date": "2022-01-31",
     "depTime": "11:30",
     "arrTime": "12:45",
-    "duration": 303,
-    "distance": 2185,
-    "delay": 8,
+    "duration": 302,
+    "distance": 2177,
+    "delay": 5,
     "aircraft": "B737-800",
-    "tailNumber": "PR-YV6",
+    "tailNumber": "PR-YV8",
     "status": "Completed",
     "bookingCode": "YKTVWE"
   }

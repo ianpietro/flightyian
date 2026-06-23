@@ -757,7 +757,7 @@ def main():
         pass
 
     # 4. Gravação e Deduplicação no customFlights.js
-    db_file_path = "/Users/iancapo/APPs/Flighty IAN/customFlights.js"
+    db_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "customFlights.js")
     existing_flights = load_existing_flights(db_file_path)
     print(f"\n[+] Voos anteriormente importados na base: {len(existing_flights)}")
 
@@ -789,7 +789,8 @@ def main():
         print("[-] Falha ao gravar banco de voos local customFlights.js.")
         
     print("=" * 60)
-    input("\nPressione ENTER para fechar...")
+    if not os.environ.get("NON_INTERACTIVE"):
+        input("\nPressione ENTER para fechar...")
 
 if __name__ == "__main__":
     main()
