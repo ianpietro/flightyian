@@ -55,30 +55,66 @@ body {
   background: #050508 !important;
 }
 
-/* Custom Leaflet Map Inversion & Glowing Styling */
-.leaflet-tile {
-  filter: invert(100%) hue-rotate(180deg) brightness(30%) contrast(150%) saturate(120%);
-  opacity: 0.7;
+/* Custom Mapbox GL Airport Markers & Popups */
+.mapbox-airport-marker {
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.leaflet-container {
-  font-family: var(--font-sans) !important;
+.mapbox-airport-marker:hover {
+  transform: scale(1.35);
 }
 
-.leaflet-bar {
-  border: none !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+/* Custom premium Mapbox Popup matching Flighty iOS design */
+.mapboxgl-popup {
+  z-index: 1000 !important;
 }
 
-.leaflet-bar a {
-  background-color: rgba(30, 30, 35, 0.85) !important;
+.mapboxgl-popup-content {
+  background: rgba(10, 10, 15, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
   color: var(--text-primary) !important;
-  border-bottom: 1px solid var(--card-border) !important;
-  backdrop-filter: blur(10px);
+  padding: 10px 14px !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
 }
 
-.leaflet-bar a:hover {
-  background-color: rgba(50, 50, 55, 0.9) !important;
+.mapboxgl-popup-close-button {
+  display: none !important; /* Hide popup close cross for a cleaner tooltip-style popup */
+}
+
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: rgba(10, 10, 15, 0.85) !important;
+}
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: rgba(10, 10, 15, 0.85) !important;
+}
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: rgba(10, 10, 15, 0.85) !important;
+}
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: rgba(10, 10, 15, 0.85) !important;
+}
+
+.custom-map-tooltip strong {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.custom-map-tooltip span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Active tracking animated plane wrapper */
+.mapbox-active-plane {
+  will-change: transform;
+  transition: transform 0.3s linear;
 }
 
 /* App Container Layout (Desktop Frame) */

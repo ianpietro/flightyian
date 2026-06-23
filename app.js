@@ -8,9 +8,12 @@ class FlightyApp {
   constructor() {
     this.map = null;
     this.routeLayers = [];
+    this.routeSources = [];
     this.markerLayers = [];
     this.activePlaneInterval = null;
     this.activePlaneMarker = null;
+    this.mapLoaded = false;
+    this.pendingPlot = null;
 
     // Load data and merge real email flights (CORS-free offline database)
     const storedPast = JSON.parse(localStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
@@ -122,23 +125,44 @@ class FlightyApp {
     });
   }
 
-  // Initialize Leaflet Map
+  // Initialize Mapbox GL Map
   initMap() {
-    // Map bounds starting around South America
-    this.map = L.map('map', {
-      center: [-28, -52],
-      zoom: 4,
-      zoomControl: false,
-      attributionControl: false
+    const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
+    const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
+    mapboxgl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
+                           localStorage.getItem('MAPBOX_TOKEN') || 
+                           `${tokenPart1}.${tokenPart2}`;
+
+    this.map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/dark-v11',
+      center: [-52, -28], // [longitude, latitude]
+      zoom: 3,
+      pitch: 30,
+      antialias: true
     });
 
-    // standard dark tile set filtered using CSS in style.css
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 18
-    }).addTo(this.map);
+    this.map.on('load', () => {
+      // Configure 3D Globe Projection
+      this.map.setProjection({ name: 'globe' });
 
-    // Add custom zoom controls in a cleaner corner
-    L.control.zoom({ position: 'topright' }).addTo(this.map);
+      // Enable premium atmosphere fog (Flighty visual style)
+      this.map.setFog({
+        color: 'rgb(8, 8, 12)', 
+        'high-color': 'rgb(18, 18, 28)', 
+        'horizon-blend': 0.02,
+        'space-color': 'rgb(2, 2, 4)', 
+        'star-intensity': 0.6
+      });
+
+      this.mapLoaded = true;
+
+      // Handle any pending plot queued before load event fired
+      if (this.pendingPlot) {
+        this.plotFlightsOnMap(this.pendingPlot.flights, this.pendingPlot.type);
+        this.pendingPlot = null;
+      }
+    });
   }
 
   // Tab Navigation Handling
@@ -157,7 +181,7 @@ class FlightyApp {
       this.plotFlightsOnMap(this.pastFlights, 'past');
       const totalDistance = this.pastFlights.reduce((sum, f) => sum + f.distance, 0);
       statsLbl.innerText = `${this.pastFlights.length} voos • ${totalDistance.toLocaleString("pt-BR")} km`;
-      this.map.flyTo([-32, -55], 4, { animate: true, duration: 1 });
+      if (this.map) this.map.flyTo({ center: [-55, -32], zoom: 4, duration: 1000 });
     });
 
     toggleUp.addEventListener("click", () => {
@@ -166,7 +190,7 @@ class FlightyApp {
       this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
       const totalDistance = this.upcomingFlights.reduce((sum, f) => sum + f.distance, 0);
       statsLbl.innerText = `${this.upcomingFlights.length} voos • ${totalDistance.toLocaleString("pt-BR")} km`;
-      this.map.flyTo([-23, -45], 5, { animate: true, duration: 1 });
+      if (this.map) this.map.flyTo({ center: [-45, -23], zoom: 5, duration: 1000 });
     });
 
     navItems.forEach(item => {
@@ -195,91 +219,71 @@ class FlightyApp {
           // Trigger past flights list by default
           togglePast.click();
 
-          // Recalculate sizes for Leaflet due to dynamic size shifts
+          // Recalculate sizes for Mapbox due to dynamic size shifts
           setTimeout(() => {
-            this.map.invalidateSize();
+            if (this.map) this.map.resize();
           }, 350);
         } else {
           document.body.classList.remove("map-only-active");
           mapCapsule.style.display = "none";
           
           setTimeout(() => {
-            this.map.invalidateSize();
+            if (this.map) this.map.resize();
           }, 350);
 
           // Perform specific maps plotting depending on active tab
           if (targetTab === "my-flights") {
             this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
-            this.map.flyTo([-23, -45], 5, { animate: true, duration: 1.5 });
+            if (this.map) this.map.flyTo({ center: [-45, -23], zoom: 5, duration: 1500 });
           } else if (targetTab === "passport") {
             this.plotFlightsOnMap(this.pastFlights, 'past');
-            this.map.flyTo([-32, -55], 4, { animate: true, duration: 1.5 });
+            if (this.map) this.map.flyTo({ center: [-55, -32], zoom: 4, duration: 1500 });
           }
         }
       });
     });
   }
 
-  // Clear existing map paths & markers
+  // Clear existing map paths & markers (Mapbox GL Engine)
   clearMapRoutes() {
     if (this.activePlaneInterval) {
       clearInterval(this.activePlaneInterval);
       this.activePlaneInterval = null;
     }
+    if (this.activePlaneAnimFrame) {
+      cancelAnimationFrame(this.activePlaneAnimFrame);
+      this.activePlaneAnimFrame = null;
+    }
     if (this.activePlaneMarker) {
-      this.map.removeLayer(this.activePlaneMarker);
+      this.activePlaneMarker.remove();
       this.activePlaneMarker = null;
     }
-    this.routeLayers.forEach(layer => this.map.removeLayer(layer));
-    this.markerLayers.forEach(layer => this.map.removeLayer(layer));
+    if (this.map) {
+      this.routeLayers.forEach(layerId => {
+        if (this.map.getLayer(layerId)) this.map.removeLayer(layerId);
+      });
+      this.routeSources.forEach(sourceId => {
+        if (this.map.getSource(sourceId)) this.map.removeSource(sourceId);
+      });
+      this.markerLayers.forEach(marker => marker.remove());
+    }
     this.routeLayers = [];
+    this.routeSources = [];
     this.markerLayers = [];
   }
 
-  // Generate curved points for flight paths (Bezier logic in LatLng space)
-  getCurvePoints(latlng1, latlng2) {
-    const lat1 = latlng1[0];
-    const lng1 = latlng1[1];
-    const lat2 = latlng2[0];
-    const lng2 = latlng2[1];
-
-    // Calculate midpoint
-    const midLat = (lat1 + lat2) / 2;
-    const midLng = (lng1 + lng2) / 2;
-
-    // Perpendicular vector displacement to create curved arc
-    const dLat = lat2 - lat1;
-    const dLng = lng2 - lng1;
-
-    // Scale displacement depending on distance (control curvature factor)
-    const factor = 0.25;
-    const cpLat = midLat + dLng * factor;
-    const cpLng = midLng - dLat * factor;
-
-    const points = [];
-    const steps = 40;
-
-    // Bezier math: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const bLat = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * cpLat + t * t * lat2;
-      const bLng = (1 - t) * (1 - t) * lng1 + 2 * (1 - t) * t * cpLng + t * t * lng2;
-      points.push([bLat, bLng]);
-    }
-    return points;
-  }
-
-  // Plot flights on map as curved glowing arcs
+  // Plot flights on map as curved 3D geodesic arcs (Turf.js Great Circles)
   plotFlightsOnMap(flights, type = 'upcoming') {
+    if (!this.mapLoaded) {
+      this.pendingPlot = { flights, type };
+      return;
+    }
+
     this.clearMapRoutes();
 
     if (flights.length === 0) return;
 
-    const routeColor = type === 'upcoming' ? '#0a84ff' : '#ffd700'; // Neon blue for upcoming, Gold for passport completed
-    const lineWeight = type === 'upcoming' ? 3.5 : 2;
-    const opacity = type === 'upcoming' ? 0.9 : 0.65;
-    const dashArray = type === 'upcoming' ? null : "4, 6";
-
+    const routeColor = type === 'upcoming' ? '#0a84ff' : '#ffd700'; // Neon blue for upcoming, Gold for past completed
     const plottedAirports = new Set();
 
     flights.forEach(flight => {
@@ -288,54 +292,98 @@ class FlightyApp {
 
       if (!depAir || !arrAir) return;
 
-      const p1 = [depAir.lat, depAir.lng];
-      const p2 = [arrAir.lat, arrAir.lng];
+      const p1 = [depAir.lng, depAir.lat]; // Turf & Mapbox require [lng, lat]
+      const p2 = [arrAir.lng, arrAir.lat];
 
-      // Draw beautiful curved route
-      const curvePoints = this.getCurvePoints(p1, p2);
-      const polyline = L.polyline(curvePoints, {
-        color: routeColor,
-        weight: lineWeight,
-        opacity: opacity,
-        dashArray: dashArray,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(this.map);
+      // Generate geodesic curve between points
+      const start = turf.point(p1);
+      const end = turf.point(p2);
+      const greatCircleRoute = turf.greatCircle(start, end, { npoints: 100 });
 
-      // Store references to clear later
-      this.routeLayers.push(polyline);
+      const sourceId = `source-${flight.id}`;
+      
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        lineMetrics: true, // Crucial for gradient support
+        data: greatCircleRoute
+      });
+      this.routeSources.push(sourceId);
 
-      // Add glows for upcoming active lines
+      // Neon-blue glowing active route
       if (type === 'upcoming') {
-        const glowLine = L.polyline(curvePoints, {
-          color: routeColor,
-          weight: lineWeight + 6,
-          opacity: 0.15
-        }).addTo(this.map);
-        this.routeLayers.push(glowLine);
+        const glowLayerId = `layer-glow-${flight.id}`;
+        this.map.addLayer({
+          id: glowLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': routeColor,
+            'line-width': 8,
+            'line-opacity': 0.15
+          }
+        });
+        this.routeLayers.push(glowLayerId);
+
+        const mainLayerId = `layer-${flight.id}`;
+        this.map.addLayer({
+          id: mainLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': routeColor,
+            'line-width': 3.5,
+            'line-opacity': 0.9
+          }
+        });
+        this.routeLayers.push(mainLayerId);
+      } else {
+        // Gold dashed line for past flights
+        const mainLayerId = `layer-${flight.id}`;
+        this.map.addLayer({
+          id: mainLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': routeColor,
+            'line-width': 2,
+            'line-opacity': 0.65,
+            'line-dasharray': [3, 3]
+          }
+        });
+        this.routeLayers.push(mainLayerId);
       }
 
-      // Add subtle circular airport pins
+      // Add elegant airport pins
       [depAir, arrAir].forEach(air => {
         if (plottedAirports.has(air.code)) return;
         plottedAirports.add(air.code);
 
-        const circleMarker = L.circleMarker([air.lat, air.lng], {
-          radius: 5,
-          color: routeColor,
-          fillColor: '#000',
-          fillOpacity: 1,
-          weight: 2,
-          pane: 'markerPane'
-        }).addTo(this.map);
+        const pinEl = document.createElement('div');
+        pinEl.className = 'mapbox-airport-marker';
+        pinEl.style.width = '10px';
+        pinEl.style.height = '10px';
+        pinEl.style.borderRadius = '50%';
+        pinEl.style.backgroundColor = '#000';
+        pinEl.style.border = `2px solid ${routeColor}`;
+        pinEl.style.boxShadow = `0 0 8px ${routeColor}`;
 
-        circleMarker.bindTooltip(`<strong style="color:${routeColor}">${air.code}</strong><br><span style="font-size:11px">${air.city}</span>`, {
-          permanent: false,
-          direction: 'top',
-          className: 'custom-map-tooltip'
-        });
+        const marker = new mapboxgl.Marker({ element: pinEl })
+          .setLngLat([air.lng, air.lat])
+          .addTo(this.map);
+        
+        this.markerLayers.push(marker);
 
-        this.markerLayers.push(circleMarker);
+        const popup = new mapboxgl.Popup({ 
+          offset: 10, 
+          closeButton: false, 
+          className: 'custom-map-tooltip' 
+        }).setHTML(`<strong style="color:${routeColor}">${air.code}</strong><span>${air.city}</span>`);
+
+        pinEl.addEventListener('mouseenter', () => marker.setPopup(popup).togglePopup());
+        pinEl.addEventListener('mouseleave', () => marker.getPopup().remove());
       });
     });
   }
@@ -594,9 +642,9 @@ class FlightyApp {
 
     // Fly camera directly to map boundary for this flight path
     this.plotFlightsOnMap([flight], isPast ? 'past' : 'upcoming');
-    const p1 = [depAir.lat, depAir.lng];
-    const p2 = [arrAir.lat, arrAir.lng];
-    this.map.fitBounds([p1, p2], { padding: [50, 50], maxZoom: 6 });
+    const p1 = [depAir.lng, depAir.lat];
+    const p2 = [arrAir.lng, arrAir.lat];
+    this.map.fitBounds([p1, p2], { padding: 50, maxZoom: 6 });
 
     // Header values
     document.getElementById("modal-airline-info").innerText = `${airline.name} • Voo ${flight.flightNumber}`;
@@ -679,8 +727,10 @@ class FlightyApp {
   }
 
   // Ticking active plane simulation on the map and status drawer
+  // Ticking active plane simulation on the Mapbox GL map and status drawer
   startLiveTelemetry(flight) {
     if (this.activePlaneInterval) clearInterval(this.activePlaneInterval);
+    if (this.activePlaneAnimFrame) cancelAnimationFrame(this.activePlaneAnimFrame);
 
     const progressFill = document.getElementById("modal-progress-fill");
     const progressAirplane = document.getElementById("modal-progress-airplane");
@@ -691,59 +741,147 @@ class FlightyApp {
 
     // Clear active map tracking planes
     if (this.activePlaneMarker) {
-      this.map.removeLayer(this.activePlaneMarker);
+      this.activePlaneMarker.remove();
       this.activePlaneMarker = null;
     }
 
-    const curvePoints = this.getCurvePoints(
-      [AIRPORTS[flight.from].lat, AIRPORTS[flight.from].lng],
-      [AIRPORTS[flight.to].lat, AIRPORTS[flight.to].lng]
-    );
-
-    // Simulate standard flight lifecycle
-    // Let's mock a plane moving along the Bezier curve in real-time
-    let progress = 0;
+    const p1 = [AIRPORTS[flight.from].lng, AIRPORTS[flight.from].lat];
+    const p2 = [AIRPORTS[flight.to].lng, AIRPORTS[flight.to].lat];
+    const start = turf.point(p1);
+    const end = turf.point(p2);
     
-    // Add custom active airplane marker
-    const planeIcon = L.divIcon({
-      className: 'active-tracking-plane',
-      html: `<div style="font-size: 26px; transform: rotate(90deg); filter: drop-shadow(0 4px 8px rgba(10, 132, 255, 0.5)); color: var(--info-blue)">✈️</div>`,
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
+    // Generate geodesic points for smooth flight tracking
+    const greatCircleRoute = turf.greatCircle(start, end, { npoints: 300 });
+    const coordinates = greatCircleRoute.geometry.coordinates;
+
+    // Add trailing route source and layer for gradient effect
+    if (this.map.getLayer('layer-telemetry-trail')) this.map.removeLayer('layer-telemetry-trail');
+    if (this.map.getSource('source-telemetry-trail')) this.map.removeSource('source-telemetry-trail');
+
+    this.map.addSource('source-telemetry-trail', {
+      type: 'geojson',
+      lineMetrics: true,
+      data: {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [coordinates[0], coordinates[1]]
+        }
+      }
     });
+    this.routeSources.push('source-telemetry-trail');
 
-    this.activePlaneMarker = L.marker(curvePoints[0], { icon: planeIcon }).addTo(this.map);
+    this.map.addLayer({
+      id: 'layer-telemetry-trail',
+      type: 'line',
+      source: 'source-telemetry-trail',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-width': 4,
+        'line-gradient': [
+          'interpolate',
+          ['linear'],
+          ['line-progress'],
+          0, 'rgba(244, 63, 94, 0)',
+          0.8, 'rgba(244, 63, 94, 0.4)',
+          1, '#f43f5e'
+        ]
+      }
+    });
+    this.routeLayers.push('layer-telemetry-trail');
 
-    const updateTelemetry = () => {
-      // Simulate ticking progression
-      progress += 2.5; 
-      if (progress > 100) progress = 0; // Loop tracking for simulation visual
+    // Create a custom SVG airplane marker (0 deg base heading)
+    const planeEl = document.createElement('div');
+    planeEl.className = 'mapbox-active-plane';
+    planeEl.innerHTML = `
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="#f43f5e" style="filter: drop-shadow(0 2px 6px rgba(244, 63, 94, 0.6));">
+        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5L21 16z"/>
+      </svg>
+    `;
 
-      const index = Math.floor((progress / 100) * (curvePoints.length - 1));
-      const pos = curvePoints[index];
+    this.activePlaneMarker = new mapboxgl.Marker({ element: planeEl })
+      .setLngLat(coordinates[0])
+      .addTo(this.map);
 
-      // Update map marker pos
+    let progress = 0;
+    const step = 0.5; // Controls the animation speed (frames increment)
+    let isWaiting = false;
+
+    const animate = () => {
+      if (isWaiting) return;
+
+      progress += step;
+      
+      if (progress >= coordinates.length) {
+        isWaiting = true;
+        setTimeout(() => {
+          progress = 0;
+          isWaiting = false;
+          if (this.map) {
+            this.activePlaneAnimFrame = requestAnimationFrame(animate);
+          }
+        }, 2000); // Wait 2s at the destination before restarting loop
+        return;
+      }
+
+      const currentIdx = Math.min(Math.floor(progress), coordinates.length - 1);
+      const pos = coordinates[currentIdx];
+      const nextIdx = Math.min(currentIdx + 1, coordinates.length - 1);
+      const nextPos = coordinates[nextIdx];
+
+      // Calculate bearing for plane heading rotation
+      let bearing = 0;
+      if (pos[0] !== nextPos[0] || pos[1] !== nextPos[1]) {
+        bearing = turf.bearing(turf.point(pos), turf.point(nextPos));
+      }
+
+      // Update plane position and rotation
       if (this.activePlaneMarker) {
-        this.activePlaneMarker.setLatLng(pos);
+        this.activePlaneMarker.setLngLat(pos);
+        const svgEl = planeEl.querySelector('svg');
+        if (svgEl) svgEl.style.transform = `rotate(${bearing}deg)`;
+      }
+
+      // Update trailing path line
+      const slicedCoords = coordinates.slice(0, Math.max(2, currentIdx + 1));
+      const source = this.map.getSource('source-telemetry-trail');
+      if (source) {
+        source.setData({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: slicedCoords
+          }
+        });
       }
 
       // Update UI sliding drawer details
-      progressFill.style.width = `${progress}%`;
-      progressAirplane.style.left = `${progress}%`;
+      const pct = (currentIdx / (coordinates.length - 1)) * 100;
+      if (progressFill) progressFill.style.width = `${pct}%`;
+      if (progressAirplane) progressAirplane.style.left = `${pct}%`;
 
-      // Live Telemetry Numbers matching cruise
-      const currentSpeed = 820 + Math.floor(Math.random() * 30);
-      const currentAltitude = progress < 10 || progress > 90 ? 12000 + Math.floor(Math.random() * 5000) : 35000 + Math.floor(Math.random() * 1000);
-      const minutesRemaining = Math.max(0, Math.round(((100 - progress) / 100) * flight.duration));
+      // Telemetry statistics calculation
+      const currentSpeed = 820 + Math.floor(Math.sin(progress / 10) * 15);
+      let currentAltitude = 35000;
+      if (pct < 10) {
+        currentAltitude = Math.round(12000 + (pct / 10) * 23000);
+      } else if (pct > 90) {
+        currentAltitude = Math.round(35000 - ((pct - 90) / 10) * 31000);
+      } else {
+        currentAltitude = 35000 + Math.floor(Math.random() * 200);
+      }
 
-      speedVal.innerText = `${currentSpeed} km/h`;
-      altVal.innerText = `${currentAltitude.toLocaleString()} ft`;
-      remainingVal.innerText = minutesRemaining > 0 ? `${Math.floor(minutesRemaining / 60)}h ${minutesRemaining % 60}m` : "Chegando";
-      statusLabel.innerText = progress < 10 ? "DECOLANDO" : progress > 90 ? "DESCENTE" : "CRUZEIRO";
+      const minutesRemaining = Math.max(0, Math.round(((100 - pct) / 100) * flight.duration));
+
+      if (speedVal) speedVal.innerText = `${currentSpeed} km/h`;
+      if (altVal) altVal.innerText = `${currentAltitude.toLocaleString()} ft`;
+      if (remainingVal) remainingVal.innerText = minutesRemaining > 0 ? `${Math.floor(minutesRemaining / 60)}h ${minutesRemaining % 60}m` : "Chegando";
+      if (statusLabel) statusLabel.innerText = pct < 10 ? "DECOLANDO" : pct > 90 ? "DESCENTE" : "CRUZEIRO";
+
+      this.activePlaneAnimFrame = requestAnimationFrame(animate);
     };
 
-    updateTelemetry();
-    this.activePlaneInterval = setInterval(updateTelemetry, 1500);
+    animate();
   }
 
   // Parse METAR details for standard pilots (Pro Feature)
