@@ -67,8 +67,6 @@ const safeStorage = {
   }
 };
 
-const localStorage = safeStorage;
-
 // Diagnostic Debug Panel - Intercepts console logs and displays them visually
 (function() {
   const logContainer = [];
@@ -825,7 +823,7 @@ class FlightyApp {
 
     try {
       // Ensure sync flag is set locally
-      localStorage.setItem('flighty_cloud_synced_v4', 'true');
+      safeStorage.setItem('flighty_cloud_synced_v4', 'true');
 
       // 1. Fetch flights
       const { data: dbFlights, error } = await this.supabase
@@ -895,8 +893,8 @@ class FlightyApp {
         this.upcomingFlights = mappedFlights.filter(f => f.status !== "Completed");
 
         // Save local copy
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
-        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
 
         // Re-render
         this.renderMyFlights();
@@ -938,7 +936,7 @@ class FlightyApp {
         if (profile.avatar_url) {
           const photoImg = document.getElementById("passport-photo-img");
           if (photoImg) photoImg.src = profile.avatar_url;
-          localStorage.setItem("passport-photo-dataurl", profile.avatar_url);
+          safeStorage.setItem("passport-photo-dataurl", profile.avatar_url);
         }
         
         // Dynamic Passport Number based on names
@@ -1003,8 +1001,8 @@ class FlightyApp {
 
       if (data && data[0]) {
         f.id = data[0].id;
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
-        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
       }
       console.log("[Supabase] Voo salvo na nuvem com sucesso!");
     } catch (e) {
@@ -1894,7 +1892,7 @@ class FlightyApp {
       const surname = (document.getElementById("passport-surname")?.innerText || "").trim();
       const givenname = (document.getElementById("passport-givenname")?.innerText || "").trim();
       const fullName = `${givenname} ${surname}`.trim();
-      const avatarUrl = localStorage.getItem("passport-photo-dataurl") || "";
+      const avatarUrl = safeStorage.getItem("passport-photo-dataurl") || "";
 
       const { error } = await this.supabase
         .from('profiles')
@@ -1916,7 +1914,7 @@ class FlightyApp {
     const fields = ["passport-surname", "passport-givenname", "passport-country-name", "passport-issue-date"];
     
     fields.forEach(fieldId => {
-      const val = localStorage.getItem(fieldId);
+      const val = safeStorage.getItem(fieldId);
       const el = document.getElementById(fieldId);
       if (val && el) {
         el.innerText = val;
@@ -1924,7 +1922,7 @@ class FlightyApp {
       
       if (el) {
         el.addEventListener("blur", () => {
-          localStorage.setItem(fieldId, el.innerText);
+          safeStorage.setItem(fieldId, el.innerText);
           this.updateMRZ();
           if (this.supabase && this.currentUser) {
             this.saveProfileToSupabase();
@@ -1945,7 +1943,7 @@ class FlightyApp {
     const photoInput = document.getElementById("passport-photo-input");
     const photoImg = document.getElementById("passport-photo-img");
 
-    const savedPhoto = localStorage.getItem("passport-photo-dataurl");
+    const savedPhoto = safeStorage.getItem("passport-photo-dataurl");
     if (savedPhoto && photoImg) {
       photoImg.src = savedPhoto;
     }
@@ -1962,7 +1960,7 @@ class FlightyApp {
           reader.onload = (event) => {
             const dataUrl = event.target.result;
             if (photoImg) photoImg.src = dataUrl;
-            localStorage.setItem("passport-photo-dataurl", dataUrl);
+            safeStorage.setItem("passport-photo-dataurl", dataUrl);
             if (this.supabase && this.currentUser) {
               this.saveProfileToSupabase();
             }
@@ -2829,7 +2827,7 @@ class FlightyApp {
         flight.airline = AIRLINES[carrier] ? carrier : flight.airline;
 
         // Save local
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
 
         // Close modal
         closeEditModal();
@@ -2879,7 +2877,7 @@ class FlightyApp {
                   .eq('id', existing[0].id);
                 if (error) throw error;
                 flight.id = existing[0].id;
-                localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+                safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
               } else {
                 await this.saveFlightToSupabase(flight);
               }
@@ -2917,7 +2915,7 @@ class FlightyApp {
 
         // Remove from local array
         this.pastFlights.splice(idx, 1);
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
 
         // Close edit modal
         closeEditModal();
@@ -3106,7 +3104,7 @@ class FlightyApp {
 
       if (isCompleted) {
         this.pastFlights.push(newFlightObj);
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
         this.renderPassport();
         if (this.supabase && this.currentUser) {
           this.saveFlightToSupabase(newFlightObj);
@@ -3114,7 +3112,7 @@ class FlightyApp {
         alert(`Sucesso! Voo Histórico ${flightNum} adicionado ao Passport.`);
       } else {
         this.upcomingFlights.push(newFlightObj);
-        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
         this.renderMyFlights();
         if (this.supabase && this.currentUser) {
           this.saveFlightToSupabase(newFlightObj);
@@ -3240,7 +3238,7 @@ class FlightyApp {
 
       if (isCompleted) {
         this.pastFlights.push(newFlightObj);
-        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
         this.renderPassport();
         if (this.supabase && this.currentUser) {
           this.saveFlightToSupabase(newFlightObj);
@@ -3249,7 +3247,7 @@ class FlightyApp {
         document.querySelector('.nav-item[data-tab="passport"]').click();
       } else {
         this.upcomingFlights.push(newFlightObj);
-        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
         this.renderMyFlights();
         this.updateGlobalBadge();
         if (this.supabase && this.currentUser) {
@@ -3353,7 +3351,7 @@ class FlightyApp {
         flight.delay = Math.floor(Math.random() * 15);
       }
       this.pastFlights.push(flight);
-      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
       this.renderPassport();
       this.clearMapRoutes();
       this.plotFlightsOnMap(this.pastFlights, 'past');
@@ -3362,7 +3360,7 @@ class FlightyApp {
     } else {
       flight.status = "Scheduled";
       this.upcomingFlights.push(flight);
-      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
       this.renderMyFlights();
       this.updateGlobalBadge();
       
@@ -3466,7 +3464,7 @@ class FlightyApp {
   // Push new upcoming flight
   addNewFlight(flight) {
     this.upcomingFlights.push(flight);
-    localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+    safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
     this.renderMyFlights();
     this.updateGlobalBadge();
     
@@ -3571,7 +3569,7 @@ class FlightyApp {
   initPassportCustomizer() {
     const swatches = document.querySelectorAll(".color-swatch");
     const booklet = document.getElementById("mypassport-booklet-card");
-    const savedTheme = localStorage.getItem('passport_cover_theme') || 'blue';
+    const savedTheme = safeStorage.getItem('passport_cover_theme') || 'blue';
 
     const folder = document.getElementById("passport-folder-wrapper");
 
@@ -3596,13 +3594,13 @@ class FlightyApp {
     swatches.forEach(swatch => {
       swatch.addEventListener("click", () => {
         const theme = swatch.dataset.theme;
-        localStorage.setItem('passport_cover_theme', theme);
+        safeStorage.setItem('passport_cover_theme', theme);
         applyTheme(theme);
       });
     });
 
     const options = document.querySelectorAll(".guilloche-option");
-    const savedPattern = localStorage.getItem('passport_guilloche_pattern') || '1';
+    const savedPattern = safeStorage.getItem('passport_guilloche_pattern') || '1';
 
     const applyPattern = (pattern) => {
       if (!booklet) return;
@@ -3620,7 +3618,7 @@ class FlightyApp {
     options.forEach(opt => {
       opt.addEventListener("click", () => {
         const pattern = opt.dataset.pattern;
-        localStorage.setItem('passport_guilloche_pattern', pattern);
+        safeStorage.setItem('passport_guilloche_pattern', pattern);
         applyPattern(pattern);
       });
     });
@@ -3655,7 +3653,7 @@ class FlightyApp {
 
     const updateMapRouteStyle = (style) => {
       this.mapRouteStyle = style;
-      localStorage.setItem('map_route_style', style);
+      safeStorage.setItem('map_route_style', style);
       
       if (btnGeodesic && btnStraight) {
         if (style === 'geodesic') {
@@ -3692,7 +3690,7 @@ class FlightyApp {
 
     // Monitor local storage photo changes to update Profile tab
     window.addEventListener("storage", () => {
-      const savedPhoto = localStorage.getItem("passport-photo-dataurl");
+      const savedPhoto = safeStorage.getItem("passport-photo-dataurl");
       if (savedPhoto) {
         if (profileImg) profileImg.src = savedPhoto;
         if (photoImg) photoImg.src = savedPhoto;
@@ -3720,7 +3718,7 @@ class FlightyApp {
     const statusLbl = document.getElementById("mapbox-token-status");
 
     if (tokenInput && saveBtn) {
-      const currentToken = localStorage.getItem('MAPBOX_TOKEN') || '';
+      const currentToken = safeStorage.getItem('MAPBOX_TOKEN') || '';
       tokenInput.value = currentToken;
 
       if (currentToken) {
@@ -3732,11 +3730,11 @@ class FlightyApp {
       saveBtn.addEventListener("click", () => {
         const tokenVal = tokenInput.value.trim();
         if (!tokenVal) {
-          localStorage.removeItem('MAPBOX_TOKEN');
+          safeStorage.removeItem('MAPBOX_TOKEN');
           statusLbl.innerText = "Status: Nenhum token salvo (usando fallback)";
           statusLbl.style.color = "var(--text-secondary)";
         } else {
-          localStorage.setItem('MAPBOX_TOKEN', tokenVal);
+          safeStorage.setItem('MAPBOX_TOKEN', tokenVal);
           statusLbl.innerText = "Status: Token salvo! Recarregando mapa...";
           statusLbl.style.color = "var(--success-green)";
         }
@@ -3842,8 +3840,8 @@ class FlightyApp {
     }
 
     if (countPast > 0 || countUpcoming > 0) {
-      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
-      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
       
       this.renderMyFlights();
       this.renderPassport();
@@ -3942,8 +3940,8 @@ window.onYearChange = () => {
 // Reset LocalStorage helper for user debugging
 window.resetFlightyDatabase = () => {
   if (confirm("Deseja resetar o banco do aplicativo para o padrão inicial dos prints?")) {
-    localStorage.removeItem('flighty_past_flights');
-    localStorage.removeItem('flighty_upcoming_flights');
+    safeStorage.removeItem('flighty_past_flights');
+    safeStorage.removeItem('flighty_upcoming_flights');
     window.location.reload();
   }
 };
