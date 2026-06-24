@@ -67,124 +67,8 @@ const safeStorage = {
   }
 };
 
-// Diagnostic Debug Panel - Intercepts console logs and displays them visually
-(function() {
-  const logContainer = [];
-  const maxLogs = 50;
 
-  function addLog(type, args) {
-    const time = new Date().toLocaleTimeString();
-    const message = args.map(arg => {
-      if (arg && arg.message) return arg.message;
-      return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
-    }).join(' ');
-    logContainer.push({ time, type, message });
-    if (logContainer.length > maxLogs) logContainer.shift();
-    updateUI();
-  }
 
-  const originalLog = console.log;
-  const originalError = console.error;
-  const originalWarn = console.warn;
-
-  console.log = function(...args) {
-    originalLog.apply(console, args);
-    addLog('log', args);
-  };
-  console.error = function(...args) {
-    originalError.apply(console, args);
-    addLog('error', args);
-  };
-  console.warn = function(...args) {
-    originalWarn.apply(console, args);
-    addLog('warn', args);
-  };
-
-  window.addEventListener('error', (event) => {
-    addLog('exception', [`Erro: ${event.message} no arquivo ${event.filename ? event.filename.split('/').pop() : 'unknown'}:${event.lineno}`]);
-  });
-
-  window.addEventListener('unhandledrejection', (event) => {
-    addLog('exception', [`Promessa não tratada: ${event.reason}`]);
-  });
-
-  let panel = null;
-  function updateUI() {
-    if (!panel) return;
-    const list = panel.querySelector('.debug-log-list');
-    if (!list) return;
-    list.innerHTML = logContainer.map(log => {
-      let color = '#ccc';
-      if (log.type === 'error' || log.type === 'exception') color = '#ff453a';
-      else if (log.type === 'warn') color = '#ff9f0a';
-      return `<div style="color: ${color}; font-size: 11px; margin-bottom: 4px; font-family: monospace; white-space: pre-wrap;">[${log.time}] [${log.type.toUpperCase()}] ${log.message}</div>`;
-    }).join('');
-    list.scrollTop = list.scrollHeight;
-  }
-
-  const initDebugPanel = () => {
-    panel = document.createElement('div');
-    panel.id = 'diagnostic-debug-panel';
-    panel.style.position = 'fixed';
-    panel.style.bottom = '10px';
-    panel.style.right = '10px';
-    panel.style.zIndex = '9999999';
-    panel.style.background = 'rgba(15, 15, 20, 0.95)';
-    panel.style.border = '1px solid rgba(255, 255, 255, 0.15)';
-    panel.style.borderRadius = '12px';
-    panel.style.padding = '10px';
-    panel.style.width = '320px';
-    panel.style.maxHeight = '200px';
-    panel.style.display = 'flex';
-    panel.style.flexDirection = 'column';
-    panel.style.color = '#fff';
-    panel.style.boxShadow = '0 10px 40px rgba(0,0,0,0.6)';
-    panel.style.backdropFilter = 'blur(10px)';
-    panel.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    
-    panel.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; margin-bottom: 6px; font-size: 12px; font-weight: bold;">
-        <span>🔍 Painel Diagnóstico</span>
-        <button class="debug-toggle-btn" style="background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: #007aff; cursor: pointer; font-size: 11px; padding: 2px 6px; font-weight: bold;">Expandir</button>
-      </div>
-      <div class="debug-log-list" style="flex: 1; overflow-y: auto; max-height: 140px; display: none;"></div>
-    `;
-
-    document.body.appendChild(panel);
-
-    const toggleBtn = panel.querySelector('.debug-toggle-btn');
-    const logList = panel.querySelector('.debug-log-list');
-    let isMinimized = true;
-    
-    const applyState = () => {
-      if (isMinimized) {
-        logList.style.display = 'none';
-        panel.style.height = 'auto';
-        panel.style.width = '160px';
-        toggleBtn.innerText = 'Expandir';
-      } else {
-        logList.style.display = 'block';
-        panel.style.height = '200px';
-        panel.style.width = '320px';
-        toggleBtn.innerText = 'Minimizar';
-      }
-      updateUI();
-    };
-
-    toggleBtn.addEventListener('click', () => {
-      isMinimized = !isMinimized;
-      applyState();
-    });
-
-    applyState();
-  };
-
-  if (document.readyState === "loading") {
-    document.addEventListener('DOMContentLoaded', initDebugPanel);
-  } else {
-    initDebugPanel();
-  }
-})();
 
 let AIRPORTS = window.AIRPORTS;
 let AIRLINES = window.AIRLINES;
@@ -1390,7 +1274,7 @@ class FlightyApp {
         <div class="flight-info-col">
           <div class="flight-info-top">
             <div class="flight-info-airline">
-              <img src="${logoSrc}" class="flight-airline-logo" onerror="this.outerHTML='<span class=\'airline-logo-dot\' style=\'background-color: ${airline.color}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px;\'></span>'" />
+              <img src="${logoSrc}" class="flight-airline-logo" data-fallback-color="${airline.color}" onerror="this.outerHTML='<span class=\'airline-logo-dot\' style=\'background-color:' + (this.dataset.fallbackColor||'#555') + '; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px;\'></span>'" />
               <span>${airline.name} • ${flight.flightNumber}</span>
             </div>
             <div class="flight-info-date">${this.formatDate(flight.date)}</div>
@@ -2967,6 +2851,8 @@ class FlightyApp {
     const searchInput = document.getElementById("flight-search-input");
     const resultsContainer = document.getElementById("search-results-list");
     const customForm = document.getElementById("custom-flight-form");
+
+    if (!searchInput || !resultsContainer || !customForm) return; // guard: elements may not exist yet
 
     // Fuzzy match algorithm matching airports or cities with score-ranking
     searchInput.addEventListener("input", (e) => {

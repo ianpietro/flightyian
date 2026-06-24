@@ -69,7 +69,20 @@ window.AIRPORTS = {
   "KEF": { code: "KEF", city: "Keflavík", name: "Keflavík International", lat: 63.9850, lng: -22.6056 },
   "BSL": { code: "BSL", city: "Basileia", name: "EuroAirport Basel", lat: 47.5900, lng: 7.5292 },
   "VCE": { code: "VCE", city: "Veneza", name: "Venice Marco Polo", lat: 45.5053, lng: 12.3519 },
-  "FRA": { code: "FRA", city: "Frankfurt", name: "Frankfurt Airport", lat: 50.0379, lng: 8.5622 }
+  "FRA": { code: "FRA", city: "Frankfurt", name: "Frankfurt Airport", lat: 50.0379, lng: 8.5622 },
+  "SCL": { code: "SCL", city: "Santiago", name: "Arturo Merino Benítez International", lat: -33.3930, lng: -70.7858 },
+  "CJC": { code: "CJC", city: "Calama", name: "El Loa Airport", lat: -22.4981, lng: -68.9036 },
+  "BOG": { code: "BOG", city: "Bogotá", name: "El Dorado International", lat: 4.7017, lng: -74.1469 },
+  "MDE": { code: "MDE", city: "Medellín", name: "José María Córdova International", lat: 6.1645, lng: -75.4227 },
+  "ADZ": { code: "ADZ", city: "San Andrés", name: "Gustavo Rojas Pinilla International", lat: 12.5767, lng: -81.7114 },
+  "MVD": { code: "MVD", city: "Montevideo", name: "Carrasco International", lat: -34.8384, lng: -56.0308 },
+  "FLN": { code: "FLN", city: "Florianópolis", name: "Heráclio Luz International", lat: -27.6702, lng: -48.5525 },
+  "NVT": { code: "NVT", city: "Navegantes", name: "Min. Victor Konder International", lat: -26.8787, lng: -48.6510 },
+  "CXJ": { code: "CXJ", city: "Caxias do Sul", name: "Hugo Cantergiani Airport", lat: -29.1961, lng: -51.1897 },
+  "PMW": { code: "PMW", city: "Palmas", name: "Brigadeiro Lysias Rodrigues", lat: -10.2900, lng: -48.3578 },
+  "GYN": { code: "GYN", city: "Goiânia", name: "Santa Genoveva Airport", lat: -16.6322, lng: -49.2206 },
+  "CGB": { code: "CGB", city: "Cuiabá", name: "Marechal Rondon International", lat: -15.6531, lng: -56.1167 },
+  "CGR": { code: "CGR", city: "Campo Grande", name: "Campo Grande International", lat: -20.4687, lng: -54.6725 }
 };
 
 window.AIRLINES = {
@@ -98,6 +111,11 @@ window.AIRLINES = {
   "W6": { code: "W6", name: "Wizz Air", color: "#C9147E" },
   "LX": { code: "LX", name: "Swiss", color: "#E10915" },
   "U2": { code: "U2", name: "easyJet", color: "#FF6600" },
+  "AV": { code: "AV", name: "Avianca", color: "#E30613" },
+  "H2": { code: "H2", name: "Sky Airline", color: "#005BAA" },
+  "JA": { code: "JA", name: "JetSMART", color: "#FFCC00" },
+  "WJ": { code: "WJ", name: "JetSMART", color: "#FFCC00" },
+  "SKX": { code: "SKX", name: "Sky Peru", color: "#800080" },
   "VY": { code: "VY", name: "Vueling", color: "#FFD200" }
 };
 
