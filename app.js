@@ -122,7 +122,7 @@ const safeStorage = {
     list.scrollTop = list.scrollHeight;
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  const initDebugPanel = () => {
     panel = document.createElement('div');
     panel.id = 'diagnostic-debug-panel';
     panel.style.position = 'fixed';
@@ -177,7 +177,13 @@ const safeStorage = {
     });
 
     applyState();
-  });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener('DOMContentLoaded', initDebugPanel);
+  } else {
+    initDebugPanel();
+  }
 })();
 
 let AIRPORTS = window.AIRPORTS;
@@ -211,7 +217,7 @@ class FlightyApp {
     this.upcomingFlights = JSON.parse(safeStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
     this.mergeStaticFlights();
 
-    this.currentYear = "2026";
+    this.currentYear = "All-Time";
     this.activeTab = "my-flights";
     this.mapRouteStyle = safeStorage.getItem('map_route_style') || 'geodesic';
 
@@ -1471,7 +1477,7 @@ class FlightyApp {
     if (daysSelectors && !daysSelectors.dataset.rebuilding) {
       daysSelectors.dataset.rebuilding = "true"; // Evita loop infinito
       
-      let currentVal = yearSelect.value || "2026";
+      let currentVal = yearSelect.value || "All-Time";
       
       // Recria as opções do select oculto
       let selectOptions = `<option value="All-Time">All-Time</option>`;
