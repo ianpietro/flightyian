@@ -1,7 +1,74 @@
 // Flighty IAN - Core Application Driver
-if (typeof window.mapboxgl === 'undefined' && typeof window.maplibregl !== 'undefined') {
+
+// Stub MapLibre GL JS if it's blocked by Brave Shields, AdBlockers, or network failure
+if (typeof window.maplibregl === 'undefined') {
+  window.maplibregl = {
+    Map: class DummyMap {
+      on(event, cb) {
+        if (event === 'load') setTimeout(cb, 100);
+      }
+      flyTo() {}
+      resize() {}
+      remove() {}
+      setProjection() {}
+      setFog() {}
+      addSource() {}
+      addLayer() {}
+      removeLayer() {}
+      removeSource() {}
+      getSource() {}
+      getLayer() {}
+      fitBounds() {}
+    },
+    Marker: class DummyMarker {
+      setLngLat() { return this; }
+      addTo() { return this; }
+      remove() {}
+    },
+    Popup: class DummyPopup {
+      setLngLat() { return this; }
+      setHTML() { return this; }
+      addTo() { return this; }
+      remove() {}
+    },
+    accessToken: ''
+  };
+}
+if (typeof window.mapboxgl === 'undefined') {
   window.mapboxgl = window.maplibregl;
 }
+
+// Safe localStorage wrapper to prevent crashes in private browsing mode (e.g., Safari Private)
+const safeStorage = {
+  _fallback: {},
+  getItem(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      console.warn(`[Storage] Não foi possível ler a chave "${key}" do localStorage:`, e);
+      return this._fallback[key] || null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn(`[Storage] Não foi possível salvar a chave "${key}" no localStorage:`, e);
+      this._fallback[key] = String(value);
+    }
+  },
+  removeItem(key) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch (e) {
+      console.warn(`[Storage] Não foi possível remover a chave "${key}" do localStorage:`, e);
+      delete this._fallback[key];
+    }
+  }
+};
+
+const localStorage = safeStorage;
+
 let AIRPORTS = window.AIRPORTS;
 let AIRLINES = window.AIRLINES;
 const PAST_FLIGHTS = window.PAST_FLIGHTS;
@@ -23,19 +90,19 @@ class FlightyApp {
     this.pendingPlot = null;
 
     // Initialize standard user flights list (uniquely identified by flightNumber + date)
-    if (localStorage.getItem('flighty_flights_initialized_v4') !== 'true') {
-      localStorage.setItem('flighty_past_flights', JSON.stringify(PAST_FLIGHTS));
-      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(UPCOMING_FLIGHTS));
-      localStorage.setItem('flighty_flights_initialized_v4', 'true');
+    if (safeStorage.getItem('flighty_flights_initialized_v4') !== 'true') {
+      safeStorage.setItem('flighty_past_flights', JSON.stringify(PAST_FLIGHTS));
+      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(UPCOMING_FLIGHTS));
+      safeStorage.setItem('flighty_flights_initialized_v4', 'true');
     }
 
-    this.pastFlights = JSON.parse(localStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
-    this.upcomingFlights = JSON.parse(localStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
+    this.pastFlights = JSON.parse(safeStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
+    this.upcomingFlights = JSON.parse(safeStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
     this.mergeStaticFlights();
 
     this.currentYear = "2026";
     this.activeTab = "my-flights";
-    this.mapRouteStyle = localStorage.getItem('map_route_style') || 'geodesic';
+    this.mapRouteStyle = safeStorage.getItem('map_route_style') || 'geodesic';
 
     this.start();
   }
@@ -157,8 +224,8 @@ class FlightyApp {
     }
 
     if (mergedAny) {
-      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
-      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
     }
   }
 
@@ -233,23 +300,32 @@ class FlightyApp {
   init() {
     const initialize = () => {
       this.mapLoaded = false;
-      this.initMap();
-      this.initTabs();
-      this.renderMyFlights();
-      this.renderPassport();
-      this.initPassportEditing();
-      this.initSearch();
-      this.initModalEvents();
-      this.updateGlobalBadge();
-      this.initPassportCustomizer();
-      this.initProfileTabListeners();
-      this.initMapboxTokenSettings();
+
+      const safeInit = (name, fn) => {
+        try {
+          fn();
+        } catch (err) {
+          console.error(`[Init] Falha ao inicializar ${name}:`, err);
+        }
+      };
+
+      safeInit("Mapa", () => this.initMap());
+      safeInit("Tabs", () => this.initTabs());
+      safeInit("Meus Voos", () => this.renderMyFlights());
+      safeInit("Passaporte", () => this.renderPassport());
+      safeInit("Edição de Passaporte", () => this.initPassportEditing());
+      safeInit("Busca de Voos", () => this.initSearch());
+      safeInit("Eventos do Modal", () => this.initModalEvents());
+      safeInit("Badges Globais", () => this.updateGlobalBadge());
+      safeInit("Customizador de Passaporte", () => this.initPassportCustomizer());
+      safeInit("Listeners de Perfil", () => this.initProfileTabListeners());
+      safeInit("Configurações do Token Mapbox", () => this.initMapboxTokenSettings());
       
       // Initialize Supabase cloud synchronization
-      this.initSupabase();
+      safeInit("Supabase Auth", () => this.initSupabase());
 
       // Plot upcoming flights by default
-      this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+      safeInit("Plot Inicial de Voos", () => this.plotFlightsOnMap(this.upcomingFlights, 'upcoming'));
     };
 
     if (document.readyState === "loading") {
@@ -809,53 +885,72 @@ class FlightyApp {
 
   // Initialize Mapbox GL Map
   initMap() {
-    // Clean up existing map instance to prevent WebGL leaks
-    if (this.map) {
-      try {
-        this.map.remove();
-      } catch (e) {
-        console.error("[Map] Error removing old map instance:", e);
+    try {
+      // Clean up existing map instance to prevent WebGL leaks
+      if (this.map) {
+        try {
+          this.map.remove();
+        } catch (e) {
+          console.error("[Map] Error removing old map instance:", e);
+        }
+        this.map = null;
+        this.mapLoaded = false;
       }
-      this.map = null;
-      this.mapLoaded = false;
+
+      const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
+      const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
+      
+      if (typeof maplibregl !== 'undefined') {
+        maplibregl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
+                               safeStorage.getItem('MAPBOX_TOKEN') || 
+                               `${tokenPart1}.${tokenPart2}`;
+
+        this.map = new maplibregl.Map({
+          container: 'map',
+          style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+          center: [12, 10], 
+          zoom: 1.2, 
+          pitch: 0, 
+          antialias: true
+        });
+
+        this.map.on('load', () => {
+          // Configure Flat Mercator Projection to match the user's flat map layout
+          if (this.map && typeof this.map.setProjection === 'function') {
+            try {
+              this.map.setProjection({ name: 'mercator' });
+            } catch (e) {
+              console.warn("[Map] Failed to set projection:", e);
+            }
+          }
+
+          // Enable premium atmosphere fog (Flighty visual style)
+          if (this.map && typeof this.map.setFog === 'function') {
+            try {
+              this.map.setFog({
+                color: 'rgb(8, 8, 12)', 
+                'high-color': 'rgb(18, 18, 28)', 
+                'horizon-blend': 0.02,
+                'space-color': 'rgb(2, 2, 4)', 
+                'star-intensity': 0.6
+              });
+            } catch (e) {
+              console.warn("[Map] Failed to set fog:", e);
+            }
+          }
+
+          this.mapLoaded = true;
+
+          // Handle any pending plot queued before load event fired
+          if (this.pendingPlot) {
+            this.plotFlightsOnMap(this.pendingPlot.flights, this.pendingPlot.type);
+            this.pendingPlot = null;
+          }
+        });
+      }
+    } catch (err) {
+      console.error("[Map] Erro catastrófico ao inicializar o mapa (WebGL pode estar sem suporte):", err);
     }
-
-    const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
-    const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
-    maplibregl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
-                           localStorage.getItem('MAPBOX_TOKEN') || 
-                           `${tokenPart1}.${tokenPart2}`;
-
-    this.map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [12, 10], 
-      zoom: 1.2, 
-      pitch: 0, 
-      antialias: true
-    });
-
-    this.map.on('load', () => {
-      // Configure Flat Mercator Projection to match the user's flat map layout
-      this.map.setProjection({ name: 'mercator' });
-
-      // Enable premium atmosphere fog (Flighty visual style)
-      this.map.setFog({
-        color: 'rgb(8, 8, 12)', 
-        'high-color': 'rgb(18, 18, 28)', 
-        'horizon-blend': 0.02,
-        'space-color': 'rgb(2, 2, 4)', 
-        'star-intensity': 0.6
-      });
-
-      this.mapLoaded = true;
-
-      // Handle any pending plot queued before load event fired
-      if (this.pendingPlot) {
-        this.plotFlightsOnMap(this.pendingPlot.flights, this.pendingPlot.type);
-        this.pendingPlot = null;
-      }
-    });
   }
 
   // Tab Navigation Handling
