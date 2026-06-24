@@ -298,6 +298,12 @@ class FlightyApp {
         }
       });
 
+      // Wire up the full-screen login overlay UI
+      this._initLoginOverlayUI();
+
+      // Wire up the Perfil-tab mini sync card
+      this.initSupabaseUI();
+
       // Check for an existing session (handles page reloads)
       const { data: { session } } = await this.supabase.auth.getSession();
       if (session && session.user) {
@@ -306,12 +312,6 @@ class FlightyApp {
         // No session — show the login overlay
         this._showLoginOverlay();
       }
-
-      // Wire up the full-screen login overlay UI
-      this._initLoginOverlayUI();
-
-      // Wire up the Perfil-tab mini sync card
-      this.initSupabaseUI();
 
     } catch (e) {
       console.error("[Auth] Falha ao inicializar:", e);
@@ -412,10 +412,17 @@ class FlightyApp {
 
     // ── Google OAuth ──────────────────────────────────────────────
     if (googleBtn) {
-      googleBtn.addEventListener('click', async () => {
+      googleBtn.addEventListener('click', async (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this._setLoginLoading(true);
         this._setLoginError('');
         try {
+          if (!this.supabase) {
+            throw new Error("Supabase não pôde ser carregado. Verifique sua conexão com a internet ou desative bloqueadores de anúncios (Adblocker/Brave Shields) que possam estar bloqueando o serviço de autenticação.");
+          }
           const redirectTo = window.location.origin + window.location.pathname;
           const { error } = await this.supabase.auth.signInWithOAuth({
             provider: 'google',
