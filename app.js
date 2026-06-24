@@ -69,6 +69,119 @@ const safeStorage = {
 
 const localStorage = safeStorage;
 
+// Diagnostic Debug Panel - Intercepts console logs and displays them visually
+(function() {
+  const logContainer = [];
+  const maxLogs = 50;
+
+  function addLog(type, args) {
+    const time = new Date().toLocaleTimeString();
+    const message = args.map(arg => {
+      if (arg && arg.message) return arg.message;
+      return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+    }).join(' ');
+    logContainer.push({ time, type, message });
+    if (logContainer.length > maxLogs) logContainer.shift();
+    updateUI();
+  }
+
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+
+  console.log = function(...args) {
+    originalLog.apply(console, args);
+    addLog('log', args);
+  };
+  console.error = function(...args) {
+    originalError.apply(console, args);
+    addLog('error', args);
+  };
+  console.warn = function(...args) {
+    originalWarn.apply(console, args);
+    addLog('warn', args);
+  };
+
+  window.addEventListener('error', (event) => {
+    addLog('exception', [`Erro: ${event.message} no arquivo ${event.filename ? event.filename.split('/').pop() : 'unknown'}:${event.lineno}`]);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    addLog('exception', [`Promessa não tratada: ${event.reason}`]);
+  });
+
+  let panel = null;
+  function updateUI() {
+    if (!panel) return;
+    const list = panel.querySelector('.debug-log-list');
+    if (!list) return;
+    list.innerHTML = logContainer.map(log => {
+      let color = '#ccc';
+      if (log.type === 'error' || log.type === 'exception') color = '#ff453a';
+      else if (log.type === 'warn') color = '#ff9f0a';
+      return `<div style="color: ${color}; font-size: 11px; margin-bottom: 4px; font-family: monospace; white-space: pre-wrap;">[${log.time}] [${log.type.toUpperCase()}] ${log.message}</div>`;
+    }).join('');
+    list.scrollTop = list.scrollHeight;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    panel = document.createElement('div');
+    panel.id = 'diagnostic-debug-panel';
+    panel.style.position = 'fixed';
+    panel.style.bottom = '10px';
+    panel.style.right = '10px';
+    panel.style.zIndex = '9999999';
+    panel.style.background = 'rgba(15, 15, 20, 0.95)';
+    panel.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+    panel.style.borderRadius = '12px';
+    panel.style.padding = '10px';
+    panel.style.width = '320px';
+    panel.style.maxHeight = '200px';
+    panel.style.display = 'flex';
+    panel.style.flexDirection = 'column';
+    panel.style.color = '#fff';
+    panel.style.boxShadow = '0 10px 40px rgba(0,0,0,0.6)';
+    panel.style.backdropFilter = 'blur(10px)';
+    panel.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    
+    panel.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; margin-bottom: 6px; font-size: 12px; font-weight: bold;">
+        <span>🔍 Painel Diagnóstico</span>
+        <button class="debug-toggle-btn" style="background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: #007aff; cursor: pointer; font-size: 11px; padding: 2px 6px; font-weight: bold;">Expandir</button>
+      </div>
+      <div class="debug-log-list" style="flex: 1; overflow-y: auto; max-height: 140px; display: none;"></div>
+    `;
+
+    document.body.appendChild(panel);
+
+    const toggleBtn = panel.querySelector('.debug-toggle-btn');
+    const logList = panel.querySelector('.debug-log-list');
+    let isMinimized = true;
+    
+    const applyState = () => {
+      if (isMinimized) {
+        logList.style.display = 'none';
+        panel.style.height = 'auto';
+        panel.style.width = '160px';
+        toggleBtn.innerText = 'Expandir';
+      } else {
+        logList.style.display = 'block';
+        panel.style.height = '200px';
+        panel.style.width = '320px';
+        toggleBtn.innerText = 'Minimizar';
+      }
+      updateUI();
+    };
+
+    toggleBtn.addEventListener('click', () => {
+      isMinimized = !isMinimized;
+      applyState();
+    });
+
+    applyState();
+  });
+})();
+
 let AIRPORTS = window.AIRPORTS;
 let AIRLINES = window.AIRLINES;
 const PAST_FLIGHTS = window.PAST_FLIGHTS;
@@ -503,13 +616,19 @@ class FlightyApp {
             throw new Error("Supabase não pôde ser carregado. Verifique sua conexão com a internet ou desative bloqueadores de anúncios (Adblocker/Brave Shields) que possam estar bloqueando o serviço de autenticação.");
           }
           const redirectTo = window.location.origin + window.location.pathname;
-          const { error } = await this.supabase.auth.signInWithOAuth({
+          console.log("[Auth] Iniciando login com Google, redirecionando para:", redirectTo);
+          const { data, error } = await this.supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo }
           });
           if (error) throw error;
-          // The page will redirect; loading state stays until redirect
+          
+          if (data && data.url) {
+            console.log("[Auth] Redirecionando manualmente para:", data.url);
+            window.location.href = data.url;
+          }
         } catch (err) {
+          console.error("[Auth] Erro ao iniciar login com Google:", err);
           this._setLoginLoading(false);
           this._setLoginError('Erro ao iniciar login com Google: ' + err.message);
         }
@@ -560,6 +679,7 @@ class FlightyApp {
 
         this._setLoginLoading(true);
         this._setLoginError('');
+        console.log(`[Auth] Iniciando tentativa de login por e-mail: ${email}`);
 
         try {
           if (this._loginMode === 'signup') {
@@ -567,18 +687,25 @@ class FlightyApp {
             this._setLoginLoading(false);
             if (error) throw error;
             if (data.user && !data.session) {
-              // Email confirmation required
+              console.log("[Auth] Cadastro efetuado com sucesso! Confirmação pendente por e-mail.");
               this._setLoginError('✉️ Confirmação enviada! Verifique seu e-mail e clique no link de confirmação.');
             } else if (data.session) {
-              // Auto-confirmed — onAuthStateChange will handle the rest
+              console.log("[Auth] Cadastro efetuado e auto-confirmado.");
+              if (data.user) {
+                await this._handleAuthSuccess(data.user);
+              }
             }
           } else {
             const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
             this._setLoginLoading(false);
             if (error) throw error;
-            // onAuthStateChange will handle whitelist check + overlay dismiss
+            if (data && data.user) {
+              console.log("[Auth] Login por e-mail efetuado com sucesso!");
+              await this._handleAuthSuccess(data.user);
+            }
           }
         } catch (err) {
+          console.error("[Auth] Erro ao autenticar por e-mail:", err);
           this._setLoginLoading(false);
           // Translate common Supabase auth errors to Portuguese
           const msg = err.message.includes('Invalid login credentials')
@@ -713,20 +840,22 @@ class FlightyApp {
       const dbFlightsMap = new Map();
       if (dbFlights) {
         dbFlights.forEach(f => {
-          const key = `${f.flight_number.trim().toUpperCase()}_${f.flight_date}`;
+          const flightNum = (f.flight_number || '').trim().toUpperCase();
+          const key = `${flightNum}_${f.flight_date}`;
           dbFlightsMap.set(key, f);
         });
       }
 
       for (const localFlight of localFlights) {
-        const key = `${localFlight.flightNumber.trim().toUpperCase()}_${localFlight.date}`;
+        const flightNum = (localFlight.flightNumber || '').trim().toUpperCase();
+        const key = `${flightNum}_${localFlight.date}`;
         const hasUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(localFlight.id);
 
         if (!hasUUID) {
           const matchedDb = dbFlightsMap.get(key);
           if (matchedDb) {
             localFlight.id = matchedDb.id;
-          } else {
+          } else if (localFlight.flightNumber) {
             console.log(`[Sync] Uploading offline/local manual flight: ${localFlight.flightNumber}`);
             await this.saveFlightToSupabase(localFlight);
           }
@@ -746,15 +875,15 @@ class FlightyApp {
           const isCompleted = f.flight_date < new Date().toISOString().split('T')[0];
           return {
             id: f.id,
-            flightNumber: f.flight_number,
-            airline: f.airline_code,
-            from: f.origin_airport_code,
-            to: f.destination_airport_code,
+            flightNumber: f.flight_number || "",
+            airline: f.airline_code || "",
+            from: f.origin_airport_code || "",
+            to: f.destination_airport_code || "",
             date: f.flight_date,
             depTime: f.depTime || "14:00",
             arrTime: f.arrTime || "15:45",
-            duration: f.duration_minutes,
-            distance: f.distance_km,
+            duration: f.duration_minutes || 120,
+            distance: f.distance_km || 400,
             delay: f.delay || 0,
             aircraft: f.aircraft_type || "Commercial",
             tailNumber: f.aircraft_registration || "",
