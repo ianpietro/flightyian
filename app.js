@@ -28,6 +28,7 @@ class FlightyApp {
 
     this.pastFlights = JSON.parse(localStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
     this.upcomingFlights = JSON.parse(localStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
+    this.mergeStaticFlights();
 
     this.currentYear = "2026";
     this.activeTab = "my-flights";
@@ -35,6 +36,129 @@ class FlightyApp {
 
     this.start();
   }
+
+  // Merge external flights (from customFlights.js and flights2024.js) into current lists
+  mergeStaticFlights() {
+    const parseDuration = (d) => {
+      if (typeof d === 'number') return d;
+      if (!d || typeof d !== 'string') return 120;
+      const match = d.match(/(\d+)h\s*(\d+)m/);
+      if (match) return parseInt(match[1]) * 60 + parseInt(match[2]);
+      const matchHours = d.match(/(\d+)h/);
+      if (matchHours) return parseInt(matchHours[1]) * 60;
+      const matchMins = d.match(/(\d+)m/);
+      if (matchMins) return parseInt(matchMins[1]);
+      const parsed = parseInt(d);
+      return isNaN(parsed) ? 120 : parsed;
+    };
+
+    const calculateArrTime = (depTime, durationMins) => {
+      if (!depTime) return "16:00";
+      const parts = depTime.split(":");
+      if (parts.length < 2) return "16:00";
+      const hours = parseInt(parts[0]);
+      const mins = parseInt(parts[1]);
+      if (isNaN(hours) || isNaN(mins)) return "16:00";
+      const totalMins = hours * 60 + mins + durationMins;
+      const newHours = Math.floor(totalMins / 60) % 24;
+      const newMins = totalMins % 60;
+      return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+    };
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Build a unique key set of currently loaded flights
+    const existingKeys = new Set();
+    const allLocal = [...this.pastFlights, ...this.upcomingFlights];
+    allLocal.forEach(f => {
+      if (f.flightNumber && f.date) {
+        existingKeys.add(`${f.flightNumber.trim().toUpperCase()}_${f.date}`);
+      }
+    });
+
+    let mergedAny = false;
+
+    // Merge window.IMPORTED_FLIGHTS
+    if (window.IMPORTED_FLIGHTS && Array.isArray(window.IMPORTED_FLIGHTS)) {
+      window.IMPORTED_FLIGHTS.forEach(f => {
+        const key = `${f.flightNumber.trim().toUpperCase()}_${f.date}`;
+        if (!existingKeys.has(key)) {
+          existingKeys.add(key);
+          const isCompleted = f.date < todayStr;
+          const duration = typeof f.duration === 'number' ? f.duration : parseDuration(f.duration);
+          const depTime = f.depTime || "14:00";
+          const arrTime = f.arrTime || calculateArrTime(depTime, duration);
+          const mapped = {
+            id: f.id || `email_${Date.now()}_${Math.random()}`,
+            flightNumber: f.flightNumber,
+            airline: f.airline || f.flightNumber.substring(0, 2).toUpperCase(),
+            from: f.from,
+            to: f.to,
+            date: f.date,
+            depTime: depTime,
+            arrTime: arrTime,
+            duration: duration,
+            distance: f.distance || 400,
+            delay: f.delay || 0,
+            aircraft: f.aircraft || "Commercial",
+            tailNumber: f.tailNumber || "",
+            seat: f.seat || f.bookingCode || "",
+            status: isCompleted ? "Completed" : "Scheduled"
+          };
+          if (isCompleted) {
+            this.pastFlights.push(mapped);
+          } else {
+            this.upcomingFlights.push(mapped);
+          }
+          mergedAny = true;
+        }
+      });
+    }
+
+    // Merge window.flights2024
+    if (window.flights2024 && Array.isArray(window.flights2024)) {
+      window.flights2024.forEach(f => {
+        const key = `${f.flightNumber.trim().toUpperCase()}_${f.date}`;
+        if (!existingKeys.has(key)) {
+          existingKeys.add(key);
+          const isCompleted = f.date < todayStr;
+          const duration = parseDuration(f.duration);
+          const depTime = f.depTime || f.time || "14:00";
+          const arrTime = f.arrTime || calculateArrTime(depTime, duration);
+          const airline = f.airline && f.airline.length === 2 ? f.airline : f.flightNumber.substring(0, 2).toUpperCase();
+          const mapped = {
+            id: f.id || `f24_${Date.now()}_${Math.random()}`,
+            flightNumber: f.flightNumber,
+            airline: airline,
+            from: f.from,
+            to: f.to,
+            date: f.date,
+            depTime: depTime,
+            arrTime: arrTime,
+            duration: duration,
+            distance: f.distance || 400,
+            delay: f.delay || 0,
+            aircraft: f.aircraft || "Commercial",
+            tailNumber: f.tailNumber || f.registration || "",
+            seat: f.seat || f.seatNumber || "",
+            status: isCompleted ? "Completed" : "Scheduled"
+          };
+          if (isCompleted) {
+            this.pastFlights.push(mapped);
+          } else {
+            this.upcomingFlights.push(mapped);
+          }
+          mergedAny = true;
+        }
+      });
+    }
+
+    if (mergedAny) {
+      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+    }
+  }
+
 
   // Load external databases asynchronously and initialize
   async start() {
@@ -219,22 +343,8 @@ class FlightyApp {
 
   // Query the allowed_emails whitelist table
   async _isEmailAllowed(email) {
-    try {
-      const { data, error } = await this.supabase
-        .from('allowed_emails')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-      if (error) {
-        // If we can't query (e.g. table doesn't exist yet), allow the admin email
-        console.warn("[Auth] Erro ao verificar whitelist:", error.message);
-        return email === 'ianpietrocapo@gmail.com';
-      }
-      return !!data;
-    } catch (err) {
-      console.warn("[Auth] Whitelist check failed:", err);
-      return email === 'ianpietrocapo@gmail.com';
-    }
+    // Permitir acesso a qualquer usuário autenticado com sucesso
+    return true;
   }
 
   // Show the login overlay
@@ -501,39 +611,52 @@ class FlightyApp {
     if (!this.supabase || !this.currentUser) return;
 
     try {
-      // Check if we need to force overwrite the database for the new flights set
-      const needsSyncOverride = localStorage.getItem('flighty_cloud_synced_v4') !== 'true';
-      if (needsSyncOverride) {
-        console.log("[Supabase] Resetting cloud database to match local standard flights set...");
-        // Delete all flights for this user
-        const { error: deleteErr } = await this.supabase
-          .from('flights')
-          .delete()
-          .eq('user_id', this.currentUser.id);
-        
-        if (deleteErr) {
-          console.error("[Supabase] Error clearing old flights:", deleteErr);
-        } else {
-          // Upload all standard flights
-          const localFlights = [...this.pastFlights, ...this.upcomingFlights];
-          for (const f of localFlights) {
-            await this.saveFlightToSupabase(f);
-          }
-          localStorage.setItem('flighty_cloud_synced_v4', 'true');
-          console.log("[Supabase] Cloud database initialized successfully!");
-        }
-      }
+      // Ensure sync flag is set locally
+      localStorage.setItem('flighty_cloud_synced_v4', 'true');
 
       // 1. Fetch flights
-      const { data: flights, error } = await this.supabase
+      const { data: dbFlights, error } = await this.supabase
         .from('flights')
         .select('*')
         .eq('user_id', this.currentUser.id);
 
       if (error) throw error;
 
-      if (flights && flights.length > 0) {
-        const mappedFlights = flights.map(f => {
+      // 2. Bidirectional Merge: Check local flights that haven't synced and upload them
+      const localFlights = [...this.pastFlights, ...this.upcomingFlights];
+      const dbFlightsMap = new Map();
+      if (dbFlights) {
+        dbFlights.forEach(f => {
+          const key = `${f.flight_number.trim().toUpperCase()}_${f.flight_date}`;
+          dbFlightsMap.set(key, f);
+        });
+      }
+
+      for (const localFlight of localFlights) {
+        const key = `${localFlight.flightNumber.trim().toUpperCase()}_${localFlight.date}`;
+        const hasUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(localFlight.id);
+
+        if (!hasUUID) {
+          const matchedDb = dbFlightsMap.get(key);
+          if (matchedDb) {
+            localFlight.id = matchedDb.id;
+          } else {
+            console.log(`[Sync] Uploading offline/local manual flight: ${localFlight.flightNumber}`);
+            await this.saveFlightToSupabase(localFlight);
+          }
+        }
+      }
+
+      // 3. Re-fetch unified flights list from Supabase
+      const { data: finalFlights, error: finalError } = await this.supabase
+        .from('flights')
+        .select('*')
+        .eq('user_id', this.currentUser.id);
+
+      if (finalError) throw finalError;
+
+      if (finalFlights && finalFlights.length > 0) {
+        const mappedFlights = finalFlights.map(f => {
           const isCompleted = f.flight_date < new Date().toISOString().split('T')[0];
           return {
             id: f.id,
@@ -568,10 +691,10 @@ class FlightyApp {
         this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
       } else {
         // Cloud is empty. If the user has local flights, auto-migrate them to the cloud database
-        const localFlights = [...this.pastFlights, ...this.upcomingFlights];
-        if (localFlights.length > 0) {
+        const localFlightsToMigrate = [...this.pastFlights, ...this.upcomingFlights];
+        if (localFlightsToMigrate.length > 0) {
           console.log("[Supabase] Banco na nuvem vazio. Migrando voos locais para o Supabase...");
-          for (const f of localFlights) {
+          for (const f of localFlightsToMigrate) {
             await this.saveFlightToSupabase(f);
           }
           console.log("[Supabase] Migração concluída com sucesso!");
@@ -656,11 +779,18 @@ class FlightyApp {
         is_public: true
       };
 
-      const { error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('flights')
-        .insert([record]);
+        .insert([record])
+        .select();
 
       if (error) throw error;
+
+      if (data && data[0]) {
+        f.id = data[0].id;
+        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      }
       console.log("[Supabase] Voo salvo na nuvem com sucesso!");
     } catch (e) {
       console.error("[Supabase] Erro ao sincronizar voo com o banco:", e);
@@ -1725,7 +1855,64 @@ class FlightyApp {
         <div class="past-date-col">${this.formatDateSimple(flight.date)}</div>
       `;
 
-      row.addEventListener("click", () => this.openFlightDetailsModal(flight, true));
+      // Context menu for desktop right click
+      row.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        this.showContextMenu(e.clientX, e.clientY, flight);
+      });
+
+      // Mobile Touch events for long press
+      let touchTimeout = null;
+      let startX = 0;
+      let startY = 0;
+      let isLongPress = false;
+
+      row.addEventListener("touchstart", (e) => {
+        isLongPress = false;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        
+        touchTimeout = setTimeout(() => {
+          isLongPress = true;
+          if (navigator.vibrate) {
+            navigator.vibrate(50); // Small haptic feedback
+          }
+          this.showContextMenu(touch.clientX, touch.clientY, flight);
+        }, 700);
+      }, { passive: true });
+
+      row.addEventListener("touchmove", (e) => {
+        const touch = e.touches[0];
+        const diffX = Math.abs(touch.clientX - startX);
+        const diffY = Math.abs(touch.clientY - startY);
+        // If moved more than 10px, cancel long press (they are scrolling)
+        if (diffX > 10 || diffY > 10) {
+          if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            touchTimeout = null;
+          }
+        }
+      }, { passive: true });
+
+      row.addEventListener("touchend", (e) => {
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+          touchTimeout = null;
+        }
+        if (isLongPress) {
+          e.preventDefault();
+        }
+      });
+
+      row.addEventListener("click", (e) => {
+        if (isLongPress) {
+          isLongPress = false;
+          return;
+        }
+        this.openFlightDetailsModal(flight, true);
+      });
+
       listBody.appendChild(row);
     });
   }
@@ -1829,6 +2016,97 @@ class FlightyApp {
     }
 
     modal.classList.add("active");
+  }
+
+  showContextMenu(x, y, flight) {
+    const menu = document.getElementById("flight-context-menu");
+    if (!menu) return;
+
+    // Show menu first to calculate dimensions
+    menu.style.display = "block";
+
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Adjust position so it doesn't overflow screen boundaries
+    let left = x;
+    let top = y;
+
+    if (x + menuWidth > windowWidth) {
+      left = windowWidth - menuWidth - 10;
+    }
+    if (y + menuHeight > windowHeight) {
+      top = windowHeight - menuHeight - 10;
+    }
+
+    // Ensure it doesn't go negative
+    left = Math.max(10, left);
+    top = Math.max(10, top);
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    // Bind data to the menu actions
+    const editBtn = document.getElementById("context-menu-edit-btn");
+    const cancelBtn = document.getElementById("context-menu-cancel-btn");
+
+    // Clear previous event listeners by cloning nodes
+    const newEditBtn = editBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    // Bind new actions
+    newEditBtn.addEventListener("click", () => {
+      menu.style.display = "none";
+      this.openEditFlightModal(flight);
+    });
+
+    newCancelBtn.addEventListener("click", () => {
+      menu.style.display = "none";
+    });
+
+    // Close menu when clicking anywhere else
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.style.display = "none";
+        document.removeEventListener("click", closeMenu);
+        document.removeEventListener("touchstart", closeMenu);
+      }
+    };
+    
+    // Defer adding listeners
+    setTimeout(() => {
+      document.addEventListener("click", closeMenu);
+      document.addEventListener("touchstart", closeMenu);
+    }, 50);
+  }
+
+  openEditFlightModal(flight) {
+    // Populate form fields
+    document.getElementById("edit-form-flight-id").value = flight.id || "";
+    document.getElementById("edit-form-flight-num").value = flight.flightNumber || "";
+    document.getElementById("edit-form-date").value = flight.date || "";
+    document.getElementById("edit-form-dep-code").value = flight.from || "";
+    document.getElementById("edit-form-arr-code").value = flight.to || "";
+    document.getElementById("edit-form-dep-time").value = flight.depTime || "14:00";
+    document.getElementById("edit-form-arr-time").value = flight.arrTime || "15:45";
+    document.getElementById("edit-form-seat").value = flight.seat || "";
+    document.getElementById("edit-form-aircraft").value = flight.aircraft || "";
+    document.getElementById("edit-form-tail").value = flight.tailNumber || "";
+    document.getElementById("edit-form-booking").value = flight.bookingCode || "";
+
+    // Set subtitle/title info
+    const airline = AIRLINES[flight.airline] || { name: flight.airline || "" };
+    document.getElementById("edit-modal-flight-title").innerText = `${airline.name || ""} Voo ${flight.flightNumber || ""} em ${this.formatDateSimple(flight.date)}`;
+
+    // Show modal drawer
+    const editModal = document.getElementById("edit-flight-modal");
+    if (editModal) {
+      editModal.classList.add("active");
+    }
   }
 
   // Ticking active plane simulation on the map and status drawer
@@ -2244,6 +2522,206 @@ class FlightyApp {
     modal.addEventListener("click", (e) => {
       if (e.target === modal) closeModal();
     });
+
+    // Edit Flight Modal events
+    const editModal = document.getElementById("edit-flight-modal");
+    const editCloseBtn = document.getElementById("edit-modal-close-btn");
+    const editCloseHandle = document.getElementById("edit-modal-close-handle");
+
+    const closeEditModal = () => {
+      editModal.classList.remove("active");
+    };
+
+    if (editCloseBtn) editCloseBtn.addEventListener("click", closeEditModal);
+    if (editCloseHandle) editCloseHandle.addEventListener("click", closeEditModal);
+    if (editModal) {
+      editModal.addEventListener("click", (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
+    }
+
+    const editForm = document.getElementById("edit-flight-form");
+    if (editForm) {
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById("edit-form-flight-id").value;
+        const flightNum = document.getElementById("edit-form-flight-num").value.trim().toUpperCase();
+        const dateVal = document.getElementById("edit-form-date").value;
+        const depCode = document.getElementById("edit-form-dep-code").value.trim().toUpperCase();
+        const arrCode = document.getElementById("edit-form-arr-code").value.trim().toUpperCase();
+        const depTime = document.getElementById("edit-form-dep-time").value;
+        const arrTime = document.getElementById("edit-form-arr-time").value;
+        const seat = document.getElementById("edit-form-seat").value.trim();
+        const aircraft = document.getElementById("edit-form-aircraft").value.trim();
+        const tailNumber = document.getElementById("edit-form-tail").value.trim().toUpperCase();
+        const bookingCode = document.getElementById("edit-form-booking").value.trim().toUpperCase();
+
+        // Validations
+        if (!AIRPORTS[depCode] || !AIRPORTS[arrCode]) {
+          alert("⚠️ Código IATA inválido. Os aeroportos devem ser válidos no sistema (ex: GRU, SDU, GIG, CNF).");
+          return;
+        }
+
+        const idx = this.pastFlights.findIndex(f => f.id === id);
+        if (idx === -1) {
+          alert("⚠️ Voo não encontrado.");
+          return;
+        }
+
+        const flight = this.pastFlights[idx];
+        
+        // Update local object properties
+        flight.flightNumber = flightNum;
+        flight.date = dateVal;
+        flight.from = depCode;
+        flight.to = arrCode;
+        flight.depTime = depTime;
+        flight.arrTime = arrTime;
+        flight.seat = seat;
+        flight.aircraft = aircraft;
+        flight.tailNumber = tailNumber;
+        flight.bookingCode = bookingCode;
+
+        // Recalculate distance and duration
+        const distance = Math.round(this.calculateDistance(
+          AIRPORTS[depCode].lat, AIRPORTS[depCode].lng,
+          AIRPORTS[arrCode].lat, AIRPORTS[arrCode].lng
+        ));
+        flight.distance = distance;
+        flight.duration = Math.round(distance / 8) + 30;
+
+        const carrier = flightNum.substring(0, 2);
+        flight.airline = AIRLINES[carrier] ? carrier : flight.airline;
+
+        // Save local
+        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+
+        // Close modal
+        closeEditModal();
+
+        // Supabase DB Update
+        if (this.supabase && this.currentUser) {
+          try {
+            const record = {
+              flight_date: flight.date,
+              airline_code: flight.airline,
+              airline_name: window.AIRLINES[flight.airline]?.name || flight.airline,
+              flight_number: flight.flightNumber,
+              origin_airport_code: flight.from,
+              origin_airport_name: `Aeroporto de ${flight.from}`,
+              origin_city: flight.from,
+              destination_airport_code: flight.to,
+              destination_airport_name: `Aeroporto de ${flight.to}`,
+              destination_city: flight.to,
+              aircraft_type: flight.aircraft,
+              aircraft_registration: flight.tailNumber,
+              distance_km: parseInt(flight.distance || 0),
+              duration_minutes: parseInt(flight.duration || 0),
+              seat_number: flight.seat,
+            };
+
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            if (isUUID) {
+              const { error } = await this.supabase
+                .from('flights')
+                .update(record)
+                .eq('id', id)
+                .eq('user_id', this.currentUser.id);
+              if (error) throw error;
+            } else {
+              // Try updating by matching details
+              const { data: existing } = await this.supabase
+                .from('flights')
+                .select('id')
+                .eq('user_id', this.currentUser.id)
+                .eq('flight_number', flight.flightNumber)
+                .eq('flight_date', flight.date);
+              
+              if (existing && existing.length > 0) {
+                const { error } = await this.supabase
+                  .from('flights')
+                  .update(record)
+                  .eq('id', existing[0].id);
+                if (error) throw error;
+                flight.id = existing[0].id;
+                localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+              } else {
+                await this.saveFlightToSupabase(flight);
+              }
+            }
+            console.log("[Supabase] Voo atualizado na nuvem com sucesso!");
+          } catch (err) {
+            console.error("[Supabase] Erro ao atualizar voo:", err);
+          }
+        }
+
+        // Re-render passport stats, table, and maps
+        this.renderPassport();
+        this.clearMapRoutes();
+        this.plotFlightsOnMap(this.pastFlights, 'past');
+        
+        alert("🎉 Voo atualizado com sucesso!");
+      });
+    }
+
+    const deleteBtn = document.getElementById("edit-form-delete-btn");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", async () => {
+        const id = document.getElementById("edit-form-flight-id").value;
+        if (!id) return;
+
+        const idx = this.pastFlights.findIndex(f => f.id === id);
+        if (idx === -1) {
+          alert("⚠️ Voo não encontrado.");
+          return;
+        }
+
+        const flight = this.pastFlights[idx];
+        const confirmDelete = confirm(`Deseja realmente apagar o voo ${flight.flightNumber || ""} de ${flight.from} para ${flight.to}?`);
+        if (!confirmDelete) return;
+
+        // Remove from local array
+        this.pastFlights.splice(idx, 1);
+        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+
+        // Close edit modal
+        closeEditModal();
+
+        // Supabase DB Delete
+        if (this.supabase && this.currentUser) {
+          try {
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            if (isUUID) {
+              const { error } = await this.supabase
+                .from('flights')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', this.currentUser.id);
+              if (error) throw error;
+            } else {
+              const { error } = await this.supabase
+                .from('flights')
+                .delete()
+                .eq('user_id', this.currentUser.id)
+                .eq('flight_number', flight.flightNumber)
+                .eq('flight_date', flight.date);
+              if (error) throw error;
+            }
+            console.log("[Supabase] Voo deletado da nuvem com sucesso!");
+          } catch (err) {
+            console.error("[Supabase] Erro ao deletar voo da nuvem:", err);
+          }
+        }
+
+        // Re-render passport stats, table, and maps
+        this.renderPassport();
+        this.clearMapRoutes();
+        this.plotFlightsOnMap(this.pastFlights, 'past');
+
+        alert("🗑️ Voo excluído com sucesso.");
+      });
+    }
   }
 
   // Initialize Search & Add Flights Engine
@@ -2260,26 +2738,30 @@ class FlightyApp {
       if (query.length < 2) return;
 
       const matches = [];
+      let isFlightPattern = false;
 
       // 1. Check if matches standard flights patterns e.g. "AD 6053"
-      if (/^[A-Z0-9]{2}\s?\d{1,4}$/.test(query)) {
+      if (/^[A-Z0-9]{2,3}\s?\d{1,4}$/.test(query)) {
+        isFlightPattern = true;
         const carrier = query.substring(0, 2);
         const codeNum = query.substring(2).trim();
 
-        if (AIRLINES[carrier]) {
-          matches.push({
-            flightNumber: `${carrier} ${codeNum}`,
-            airline: carrier,
-            from: "VCP",
-            to: "SDU",
-            date: "2026-05-29",
-            depTime: "10:30",
-            arrTime: "11:35",
-            duration: 65,
-            distance: 400,
-            status: "Scheduled"
-          });
-        }
+        // Push standard mock result as an immediate fallback placeholder
+        matches.push({
+          flightNumber: query,
+          airline: AIRLINES[carrier] ? carrier : "AD",
+          from: "VCP",
+          to: "SDU",
+          date: new Date().toISOString().split('T')[0],
+          depTime: "10:30",
+          arrTime: "11:35",
+          duration: 65,
+          distance: 400,
+          aircraft: "A320neo",
+          tailNumber: `PR-YV${Math.floor(Math.random() * 9)}`,
+          status: "Scheduled",
+          isMockPlaceholder: true
+        });
       }
 
       // 2. Perform fuzzy search with ranking over all 8,500 airports
@@ -2314,56 +2796,34 @@ class FlightyApp {
         });
       });
 
-      if (matches.length === 0) {
-        resultsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">Nenhum aeroporto ou voo encontrado. Preencha o formulário para criar manualmente.</div>`;
-        return;
+      // Render the initial offline list
+      this.renderSearchResults(matches, resultsContainer, searchInput);
+
+      // If it looks like a flight number, trigger an online search with debouncing
+      if (isFlightPattern) {
+        // Prepend a loading indicator to matches and re-render
+        const matchesWithLoading = [
+          { isLoadingPlaceholder: true },
+          ...matches
+        ];
+        this.renderSearchResults(matchesWithLoading, resultsContainer, searchInput);
+
+        if (this._searchTimeout) clearTimeout(this._searchTimeout);
+        this._searchTimeout = setTimeout(async () => {
+          const onlineFlight = await this.searchFlightOnline(query);
+          if (onlineFlight) {
+            // Remove the mock placeholder and loading indicator, put real flight at the top
+            const updatedMatches = [
+              onlineFlight,
+              ...matches.filter(m => !m.isMockPlaceholder)
+            ];
+            this.renderSearchResults(updatedMatches, resultsContainer, searchInput);
+          } else {
+            // Online lookup failed/returned nothing, remove loading but keep the mock placeholder
+            this.renderSearchResults(matches, resultsContainer, searchInput);
+          }
+        }, 400);
       }
-
-      matches.forEach(match => {
-        const item = document.createElement("div");
-        item.className = "search-result-flight";
-        
-        if (match.isAirportResult) {
-          item.innerHTML = `
-            <div class="airport-info-group">
-              <strong style="color: var(--accent-gold)">${match.code}</strong>
-              <span style="font-size: 12px; color: var(--text-secondary);">${match.city} — ${match.name}</span>
-            </div>
-            <button class="add-flight-btn" style="background: rgba(240,184,48,0.15); border-color: rgba(240,184,48,0.25); color: var(--accent-gold);">Usar</button>
-          `;
-
-          item.querySelector(".add-flight-btn").addEventListener("click", () => {
-            const depInput = document.getElementById("form-dep-code");
-            const arrInput = document.getElementById("form-arr-code");
-            if (depInput && (!depInput.value || depInput.value.length < 3)) {
-              depInput.value = match.code;
-            } else if (arrInput) {
-              arrInput.value = match.code;
-            }
-            alert(`Aeroporto ${match.code} preenchido no formulário manual!`);
-            searchInput.value = "";
-            resultsContainer.innerHTML = "";
-            depInput.focus();
-          });
-        } else {
-          item.innerHTML = `
-            <div class="airport-info-group">
-              <strong style="color: var(--info-blue)">${match.flightNumber}</strong>
-              <span style="font-size: 12px; color: var(--text-secondary);">${match.from} ➔ ${match.to}</span>
-            </div>
-            <button class="add-flight-btn">Adicionar</button>
-          `;
-
-          item.querySelector(".add-flight-btn").addEventListener("click", () => {
-            this.addNewFlight(match);
-            alert(`Voo ${match.flightNumber} agendado e inserido com sucesso!`);
-            searchInput.value = "";
-            resultsContainer.innerHTML = "";
-          });
-        }
-
-        resultsContainer.appendChild(item);
-      });
     });
 
     // Custom Flight submit form triggers
@@ -2567,6 +3027,206 @@ class FlightyApp {
 
       textParser.value = "";
     });
+  }
+
+  // Render search results UI
+  renderSearchResults(matches, resultsContainer, searchInput) {
+    resultsContainer.innerHTML = "";
+    
+    if (matches.length === 0) {
+      resultsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">Nenhum aeroporto ou voo encontrado. Preencha o formulário para criar manualmente.</div>`;
+      return;
+    }
+
+    matches.forEach(match => {
+      const item = document.createElement("div");
+      item.className = "search-result-flight";
+      
+      if (match.isAirportResult) {
+        item.innerHTML = `
+          <div class="airport-info-group">
+            <strong style="color: var(--accent-gold)">${match.code}</strong>
+            <span style="font-size: 12px; color: var(--text-secondary);">${match.city} — ${match.name}</span>
+          </div>
+          <button class="add-flight-btn" style="background: rgba(240,184,48,0.15); border-color: rgba(240,184,48,0.25); color: var(--accent-gold);">Usar</button>
+        `;
+
+        item.querySelector(".add-flight-btn").addEventListener("click", () => {
+          const depInput = document.getElementById("form-dep-code");
+          const arrInput = document.getElementById("form-arr-code");
+          if (depInput && (!depInput.value || depInput.value.length < 3)) {
+            depInput.value = match.code;
+          } else if (arrInput) {
+            arrInput.value = match.code;
+          }
+          alert(`Aeroporto ${match.code} preenchido no formulário manual!`);
+          searchInput.value = "";
+          resultsContainer.innerHTML = "";
+          depInput.focus();
+        });
+      } else if (match.isLoadingPlaceholder) {
+        item.innerHTML = `
+          <div class="airport-info-group" style="display: flex; align-items: center; gap: 8px;">
+            <div class="search-spinner" style="width: 14px; height: 14px; border: 2px solid var(--info-blue); border-top-color: transparent; border-radius: 50%; animation: search-spin 0.6s linear infinite;"></div>
+            <span style="font-size: 13px; color: var(--text-secondary);">Buscando voo online...</span>
+          </div>
+        `;
+        if (!document.getElementById("search-spin-style")) {
+          const style = document.createElement("style");
+          style.id = "search-spin-style";
+          style.innerHTML = `@keyframes search-spin { to { transform: rotate(360deg); } }`;
+          document.head.appendChild(style);
+        }
+      } else {
+        const isOnline = !!match.isOnlineResult;
+        const pillText = isOnline ? "Online" : "Rascunho";
+        const pillStyle = isOnline ? "background: #e1f5fe; color: #0288d1;" : "background: #f5f5f5; color: #757575;";
+        
+        item.innerHTML = `
+          <div class="airport-info-group">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong style="color: var(--info-blue)">${match.flightNumber}</strong>
+              <span style="font-size: 9px; font-weight: bold; padding: 2px 5px; border-radius: 4px; ${pillStyle}">${pillText}</span>
+            </div>
+            <span style="font-size: 12px; color: var(--text-secondary);">${match.from} ➔ ${match.to} (${match.aircraft || 'Voo'})</span>
+          </div>
+          <button class="add-flight-btn">Adicionar</button>
+        `;
+
+        item.querySelector(".add-flight-btn").addEventListener("click", () => {
+          this.addSearchedFlight(match);
+          searchInput.value = "";
+          resultsContainer.innerHTML = "";
+        });
+      }
+
+      resultsContainer.appendChild(item);
+    });
+  }
+
+  // Add a flight to past or upcoming lists depending on its date
+  addSearchedFlight(flight) {
+    if (!flight.id) {
+      flight.id = `searched_${Date.now()}`;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isCompleted = flight.date < todayStr;
+
+    if (isCompleted) {
+      flight.status = "Completed";
+      if (typeof flight.delay === 'undefined') {
+        flight.delay = Math.floor(Math.random() * 15);
+      }
+      this.pastFlights.push(flight);
+      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      this.renderPassport();
+      this.clearMapRoutes();
+      this.plotFlightsOnMap(this.pastFlights, 'past');
+      alert(`🎉 Voo Histórico ${flight.flightNumber} (${flight.from} ➔ ${flight.to}) adicionado com sucesso ao Passport.`);
+      document.querySelector('.nav-item[data-tab="passport"]').click();
+    } else {
+      flight.status = "Scheduled";
+      this.upcomingFlights.push(flight);
+      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      this.renderMyFlights();
+      this.updateGlobalBadge();
+      
+      if (this.activeTab === "my-flights") {
+        this.clearMapRoutes();
+        this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+      }
+      alert(`🎉 Voo Agendado ${flight.flightNumber} (${flight.from} ➔ ${flight.to}) adicionado com sucesso!`);
+      document.querySelector('.nav-item[data-tab="my-flights"]').click();
+    }
+    
+    if (this.supabase && this.currentUser) {
+      this.saveFlightToSupabase(flight);
+    }
+  }
+
+  // Fetch flight details from serverless API proxy
+  async searchFlightOnline(query) {
+    try {
+      const searchRes = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+      if (!searchRes.ok) throw new Error(`HTTP ${searchRes.status}`);
+      const searchData = await searchRes.json();
+
+      if (!searchData || !searchData.results || searchData.results.length === 0) {
+        return null;
+      }
+
+      const flightResult = searchData.results.find(r => r.type === 'schedule' || r.type === 'live');
+      if (!flightResult) return null;
+
+      const flightId = flightResult.id;
+
+      const detailRes = await fetch(`/api/flight?id=${encodeURIComponent(flightId)}`);
+      if (!detailRes.ok) throw new Error(`HTTP ${detailRes.status}`);
+      const detailData = await detailRes.json();
+
+      if (!detailData) return null;
+
+      const flightNumber = (detailData.identification && detailData.identification.number && detailData.identification.number.default)
+        || flightResult.name
+        || query.toUpperCase();
+
+      const carrier = flightNumber.substring(0, 2).toUpperCase();
+
+      const fromIATA = (detailData.airport && detailData.airport.origin && detailData.airport.origin.code && detailData.airport.origin.code.iata) || 'VCP';
+      const toIATA = (detailData.airport && detailData.airport.destination && detailData.airport.destination.code && detailData.airport.destination.code.iata) || 'SDU';
+
+      const depOffset = (detailData.airport && detailData.airport.origin && detailData.airport.origin.timezone && detailData.airport.origin.timezone.offset) || 0;
+      const arrOffset = (detailData.airport && detailData.airport.destination && detailData.airport.destination.timezone && detailData.airport.destination.timezone.offset) || 0;
+
+      const depTimestamp = (detailData.time && detailData.time.scheduled && detailData.time.scheduled.departure) || Math.round(Date.now() / 1000);
+      const arrTimestamp = (detailData.time && detailData.time.scheduled && detailData.time.scheduled.arrival) || Math.round(Date.now() / 1000) + 3600;
+
+      // Adjust date calculations using offset
+      const depLocal = new Date((depTimestamp + depOffset) * 1000);
+      const arrLocal = new Date((arrTimestamp + arrOffset) * 1000);
+
+      const dateStr = depLocal.toISOString().split('T')[0];
+      const depTimeStr = depLocal.toISOString().substring(11, 16);
+      const arrTimeStr = arrLocal.toISOString().substring(11, 16);
+
+      let durationMins = 0;
+      if (detailData.time && detailData.time.other && detailData.time.other.duration) {
+        durationMins = Math.round(detailData.time.other.duration / 60);
+      } else {
+        durationMins = Math.round((arrTimestamp - depTimestamp) / 60);
+      }
+
+      const aircraftModel = (detailData.aircraft && detailData.aircraft.model && detailData.aircraft.model.text) || 'Airbus A320';
+      const tailNumber = (detailData.aircraft && detailData.aircraft.registration) || '';
+
+      let distanceKm = 400;
+      if (AIRPORTS[fromIATA] && AIRPORTS[toIATA]) {
+        distanceKm = Math.round(this.calculateDistance(
+          AIRPORTS[fromIATA].lat, AIRPORTS[fromIATA].lng,
+          AIRPORTS[toIATA].lat, AIRPORTS[toIATA].lng
+        ));
+      }
+
+      return {
+        isOnlineResult: true,
+        flightNumber: flightNumber,
+        airline: carrier,
+        from: fromIATA,
+        to: toIATA,
+        date: dateStr,
+        depTime: depTimeStr,
+        arrTime: arrTimeStr,
+        duration: durationMins,
+        distance: distanceKm,
+        aircraft: aircraftModel,
+        tailNumber: tailNumber,
+        status: 'Scheduled'
+      };
+    } catch (e) {
+      console.warn('[Search] Online search failed:', e);
+      return null;
+    }
   }
 
   // Push new upcoming flight

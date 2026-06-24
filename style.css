@@ -82,12 +82,12 @@ body {
   transform: scale(1.35);
 }
 
-/* Custom premium Mapbox Popup matching Flighty iOS design */
-.mapboxgl-popup {
+/* Custom premium Mapbox/MapLibre Popup matching Flighty iOS design */
+.mapboxgl-popup, .maplibregl-popup {
   z-index: 1000 !important;
 }
 
-.mapboxgl-popup-content {
+.mapboxgl-popup-content, .maplibregl-popup-content {
   background: rgba(10, 10, 15, 0.85) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
@@ -99,20 +99,24 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
 }
 
-.mapboxgl-popup-close-button {
+.mapboxgl-popup-close-button, .maplibregl-popup-close-button {
   display: none !important; /* Hide popup close cross for a cleaner tooltip-style popup */
 }
 
-.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
   border-bottom-color: rgba(10, 10, 15, 0.85) !important;
 }
-.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
   border-top-color: rgba(10, 10, 15, 0.85) !important;
 }
-.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip,
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
   border-right-color: rgba(10, 10, 15, 0.85) !important;
 }
-.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip,
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
   border-left-color: rgba(10, 10, 15, 0.85) !important;
 }
 
@@ -147,39 +151,21 @@ body {
 
 .phone-wrapper {
   pointer-events: auto; /* Re-enable clicks for app itself */
-  width: 440px;
-  height: calc(100vh - 40px);
-  max-height: 920px;
+  width: 100%;
+  height: 100%;
   background-color: #ffffff;
-  border: 10px solid #000000; /* iPhone-style black bezel frame */
-  border-radius: 54px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
-  align-self: center;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Header UI Elements */
 .ios-status-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 32px 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  background-color: transparent;
-  z-index: 15;
+  display: none !important;
 }
 
-.ios-icons {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
 
 /* Sliding Mobile Sheet & Map Combo */
 .mobile-split-layout {
@@ -572,6 +558,7 @@ body {
   margin-bottom: 16px;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .passport-card-glow::before {
@@ -1166,6 +1153,41 @@ body.map-only-active .map-floating-capsule {
 }
 
 /* Responsive Adaptive Engine overrides */
+/* Passport custom year select dropdown menu styles */
+.passport-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.passport-select-wrapper select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f1f2f4;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 6px 26px 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.2s;
+}
+
+.passport-select-wrapper select:hover {
+  background: #e5e6e8;
+}
+
+.passport-select-wrapper .select-chevron {
+  position: absolute;
+  right: 10px;
+  font-size: 8px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   body {
     flex-direction: column;
@@ -1175,21 +1197,22 @@ body.map-only-active .map-floating-capsule {
   }
   
   #map-background-container {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 42%;
+    height: 100dvh;
     z-index: 1;
   }
 
   .phone-wrapper {
     width: 100vw;
-    height: 58%;
-    max-height: 58%;
-    border-radius: 28px 28px 0 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
     border: none;
-    border-top: 1px solid var(--card-border);
     align-self: stretch;
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
+    box-shadow: none;
   }
 
   .ios-status-bar {
@@ -1206,11 +1229,10 @@ body.map-only-active .map-floating-capsule {
     padding: 16px 20px 100px;
   }
 
-  .bottom-nav-bar {
-    bottom: 12px;
+  .bottom-nav-container {
+    bottom: var(--safe-bottom);
     left: 12px;
     right: 12px;
-    height: 64px;
   }
 
   /* Full screen map panel for mobile when Map Tab is active */
@@ -1222,8 +1244,8 @@ body.map-only-active .map-floating-capsule {
   }
 
   body.map-only-active .phone-wrapper {
-    height: 100vh !important;
-    max-height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
@@ -1236,9 +1258,9 @@ body.map-only-active .map-floating-capsule {
     pointer-events: none !important;
   }
 
-  body.map-only-active .bottom-nav-bar {
+  body.map-only-active .bottom-nav-container {
     pointer-events: auto !important;
-    bottom: 16px !important;
+    bottom: var(--safe-bottom) !important;
     left: 16px !important;
     right: 16px !important;
   }
@@ -2391,27 +2413,67 @@ body.map-only-active .map-floating-capsule {
   color: #000000;
 }
 
-.custom-flight-form input {
-  background: #f0f1f4 !important;
-  color: #000 !important;
-  border: none !important;
+/* Custom Flight Form Card styling - Light iOS Theme */
+.custom-flight-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  flex-shrink: 0;
 }
-#custom-flight-form label {
-  color: #6e7c8c !important;
+
+#custom-flight-form label:not([for="form-completed-checkbox"]) {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+
 #custom-flight-form input {
   background: #f0f1f4 !important;
   color: #000000 !important;
   border: none !important;
+  padding: 12px;
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  transition: background-color 0.2s;
 }
+
+#custom-flight-form input:not([type="checkbox"]) {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+#custom-flight-form input:focus {
+  background: #e4e6eb !important;
+  outline: none;
+}
+
 #custom-flight-form button {
-  background: var(--accent-pro);
-  color: #ffffff;
+  background: var(--accent-pro) !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#custom-flight-form button:active {
+  opacity: 0.8 !important;
 }
 
 #custom-flight-form input[type="checkbox"] {
   accent-color: var(--accent-pro) !important;
 }
+
 #custom-flight-form label[for="form-completed-checkbox"] {
   color: #000000 !important;
 }
@@ -2984,4 +3046,13 @@ body.map-only-active .map-floating-capsule {
 @media (max-width: 380px) {
   .login-card { padding: 28px 20px 22px; }
 }
+
+/* Custom Context Menu styling */
+.context-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.context-menu-btn:active {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
 

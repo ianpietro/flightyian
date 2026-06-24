@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Voos IAN - Rastreador de Voos Premium</title>
   
-  <!-- Mapbox GL CSS -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
+  <!-- MapLibre GL CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.3.2/dist/maplibre-gl.css" rel="stylesheet" />
   <!-- Turf.js for geodesic calculations -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
         
@@ -133,24 +133,6 @@
   <div class="app-frame">
     <div class="phone-wrapper">
       
-      <!-- iOS Device Top Status Bar -->
-      <div class="ios-status-bar">
-        <span>23:20</span>
-        <div class="ios-icons">
-          <!-- Custom Vector Airplane Icon (Airplane Mode is ON!) -->
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(45deg);">
-            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5L21 16z"/>
-          </svg>
-          <!-- Wifi -->
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 21l-12-12c4.97-4.97 13.03-4.97 18 0l-6 12zm0-15c-3.31 0-6 2.69-6 6l6 6 6-6c0-3.31-2.69-6-6-6z"/>
-          </svg>
-          <!-- Battery -->
-          <svg width="20" height="12" viewBox="0 0 24 12" fill="currentColor" style="border: 1px solid var(--text-primary); border-radius: 3px; padding: 1px;">
-            <rect x="0" y="0" width="18" height="8" rx="1" />
-          </svg>
-        </div>
-      </div>
 
       <!-- Floating Map Control Capsule (Visible only when Map Tab is active) -->
       <div class="map-floating-capsule" id="map-floating-ctrl" style="display: none;">
@@ -223,17 +205,7 @@
             </div>
           </div>
 
-          <!-- Year selector matching print tabs -->
-          <div class="days-selectors" style="margin-bottom: 16px;">
-            <select id="passport-year-select" onchange="onYearChange()" style="display:none;">
-              <option value="All-Time">All-Time</option>
-              <option value="2026" selected>2026</option>
-              <option value="2025">2025</option>
-            </select>
-            <button class="selector-btn" onclick="document.getElementById('passport-year-select').value='All-Time'; onYearChange(); this.parentNode.querySelectorAll('.selector-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">All-Time</button>
-            <button class="selector-btn active" onclick="document.getElementById('passport-year-select').value='2026'; onYearChange(); this.parentNode.querySelectorAll('.selector-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">2026</button>
-            <button class="selector-btn" onclick="document.getElementById('passport-year-select').value='2025'; onYearChange(); this.parentNode.querySelectorAll('.selector-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">2025</button>
-          </div>
+
 
           <!-- Passport Cover Customizer & Background selection -->
           <div class="passport-customizer-card">
@@ -404,11 +376,19 @@
           </div>
 
           <!-- Past Flights Table Registry -->
-          <div class="past-flights-title-row">
+          <div class="past-flights-title-row" style="margin-top: 24px;">
             <h3 class="past-flights-title">Voos Passados</h3>
-            <div class="filter-toggle-switch">
-              <button class="filter-switch-btn active">Data</button>
-              <button class="filter-switch-btn">Rota</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div class="passport-select-wrapper">
+                <select id="passport-year-select" onchange="onYearChange()">
+                  <!-- Opções injetadas dinamicamente -->
+                </select>
+                <span class="select-chevron">▼</span>
+              </div>
+              <div class="filter-toggle-switch">
+                <button class="filter-switch-btn active">Data</button>
+                <button class="filter-switch-btn">Rota</button>
+              </div>
             </div>
           </div>
 
@@ -432,33 +412,29 @@
           <div class="search-results-section" id="search-results-list" style="margin-bottom: 24px;"></div>
 
           <!-- Premium Add Custom Flight Form -->
-          <div class="passport-card-glow" style="background: rgba(30, 30, 35, 0.4); border-color: rgba(255,255,255,0.06); padding: 20px;">
+          <div class="custom-flight-card">
             <div class="pilot-weather-header" style="margin-bottom: 14px;">Registrar Voo Manual</div>
             
             <form id="custom-flight-form" style="display: flex; flex-direction: column; gap: 12px;">
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <label style="font-size: 11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Nº do Voo</label>
-                  <input type="text" id="form-flight-num" placeholder="AD 5000" required 
-                         style="background: #000; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-family: var(--font-sans);">
+                  <label>Nº do Voo</label>
+                  <input type="text" id="form-flight-num" placeholder="AD 5000" required>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <label style="font-size: 11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Data do Voo</label>
-                  <input type="date" id="form-date" value="2026-05-28" required 
-                         style="background: #000; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-family: var(--font-sans);">
+                  <label>Data do Voo</label>
+                  <input type="date" id="form-date" value="2026-05-28" required>
                 </div>
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <label style="font-size: 11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Origem (IATA)</label>
-                  <input type="text" id="form-dep-code" placeholder="VCP" maxlength="3" required 
-                         style="background: #000; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-family: var(--font-sans); text-transform: uppercase;">
+                  <label>Origem (IATA)</label>
+                  <input type="text" id="form-dep-code" placeholder="VCP" maxlength="3" required style="text-transform: uppercase;">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <label style="font-size: 11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Destino (IATA)</label>
-                  <input type="text" id="form-arr-code" placeholder="SDU" maxlength="3" required 
-                         style="background: #000; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-family: var(--font-sans); text-transform: uppercase;">
+                  <label>Destino (IATA)</label>
+                  <input type="text" id="form-arr-code" placeholder="SDU" maxlength="3" required style="text-transform: uppercase;">
                 </div>
               </div>
 
@@ -469,32 +445,6 @@
 
               <button type="submit" class="add-flight-btn" style="padding: 12px; margin-top: 6px; font-size: 14px;">Confirmar e Adicionar</button>
             </form>
-          </div>
-
-          <!-- Advanced Email Importer Panel (Flighty Pro Unlocked) -->
-          <div class="passport-card-glow" style="background: rgba(184, 124, 248, 0.04); border-color: rgba(184, 124, 248, 0.15); padding: 20px; margin-top: 18px; margin-bottom: 24px;">
-            <div class="pilot-weather-header" style="color: var(--accent-pro); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <span>Sincronizar E-mail Real (Flighty Pro)</span>
-              <span class="pro-badge" style="background: var(--accent-pro-gradient)">PRO Active</span>
-            </div>
-            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.45;">
-              Para importar passagens reais com <strong>segurança e privacidade locais</strong> (sem enviar suas senhas a ninguém), criamos um sincronizador em Python! Execute-o no seu Mac para varrer seu e-mail e salvar tudo offline.
-            </p>
-            
-            <!-- Instructions and Launcher Button -->
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-              <button type="button" class="add-flight-btn" id="connect-gmail-btn" style="width: 100%; background: linear-gradient(135deg, #b87cf8, #7a3bef); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; color: #fff;">
-                <span>🗺️</span> Como Sincronizar E-mail Real?
-              </button>
-            </div>
-
-            <!-- Functional Text Parser -->
-            <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
-              <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Importador por Texto de E-mail (Funcional)</label>
-              <textarea id="email-text-parser" placeholder="Cole o texto de confirmação recebido no seu e-mail... Ex: 'Azul confirma voo AD 4212 saindo de VCP para CNF no dia 2026-06-25'" 
-                        style="background: #000; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-family: var(--font-sans); font-size: 12px; min-height: 80px; resize: none; outline: none; line-height: 1.4;"></textarea>
-              <button type="button" class="add-flight-btn" id="parse-email-btn" style="background: var(--accent-pro-gradient); padding: 10px; font-size: 12px; margin-top: 6px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Analisar e Importar Voo</button>
-            </div>
           </div>
         </section>
 
@@ -514,14 +464,6 @@
             </div>
           </div>
 
-          <!-- Premium Pro Unlock Card -->
-          <div class="premium-pro-card">
-            <div class="pro-badge pro-badge-gold" style="margin-bottom: 8px;">Flighty Pro Local</div>
-            <h3 style="color: var(--text-primary); font-size:16px; margin-bottom: 6px;">Recursos Premium Desbloqueados</h3>
-            <p style="font-size:12.5px; color: var(--text-secondary); line-height: 1.4;">
-              Sua base de dados mundial off-line de ~8.500 aeroportos e 126 companhias aéreas está ativa no navegador. Importador de e-mails local e importação de passagens CSV estão liberados.
-            </p>
-          </div>
 
           <!-- Advanced Actions & Options -->
           <h3 class="customizer-title" style="margin-bottom: 10px;">Ações Avançadas</h3>
@@ -539,46 +481,6 @@
             </div>
           </div>
 
-          <!-- Mapbox API Key Settings Configuration -->
-          <h3 class="customizer-title" style="margin-bottom: 10px;">Token do Mapa (Mapbox)</h3>
-          <div class="settings-menu-group" style="margin-bottom: 16px;">
-            <div style="background: rgba(255, 255, 255, 0.05); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
-              <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
-                Para carregar o mapa interativo em 3D, cole seu Token Público do Mapbox (inicia com <code>pk.</code>) abaixo:
-              </span>
-              <div style="display: flex; gap: 8px;">
-                <input type="password" id="settings-mapbox-token" placeholder="pk.eyJ1..." style="flex: 1; background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none; font-family: monospace;" />
-                <button type="button" id="save-mapbox-token-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Salvar</button>
-              </div>
-              <span id="mapbox-token-status" style="font-size: 10.5px; color: var(--text-secondary); display: none;"></span>
-            </div>
-          </div>
-
-          <!-- Cloud Connection Status Integration -->
-          <h3 class="customizer-title" style="margin-bottom: 10px;">Sincronização Cloud</h3>
-          <div id="profile-cloud-sync-card" style="background: rgba(10, 132, 255, 0.06); border: 1px solid rgba(10, 132, 255, 0.2); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <span style="font-size: 20px;">☁️</span>
-                <div>
-                  <strong style="color: var(--text-primary); display: block; font-size: 13px;">Supabase Cloud Database</strong>
-                  <span id="profile-cloud-status" style="font-size: 11px; color: var(--text-secondary);">Desconectado</span>
-                </div>
-              </div>
-              <button type="button" id="profile-cloud-auth-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">
-                Conectar
-              </button>
-            </div>
-            
-            <div id="profile-cloud-auth-form" style="display: none; flex-direction: column; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 10px; margin-top: 4px;">
-              <input type="email" id="profile-cloud-email" placeholder="E-mail" style="background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none;" />
-              <input type="password" id="profile-cloud-password" placeholder="Senha" style="background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none;" />
-              <div style="display: flex; gap: 8px; margin-top: 4px;">
-                <button type="button" id="profile-cloud-login-btn" style="flex: 1; background: var(--info-blue); border: none; color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Entrar</button>
-                <button type="button" id="profile-cloud-signup-btn" style="flex: 1; background: transparent; border: 1px solid rgba(0, 0, 0, 0.15); color: var(--text-primary); padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Cadastrar</button>
-              </div>
-            </div>
-          </div>
         </section>
 
       </main>
@@ -716,136 +618,106 @@
         </div>
       </div>
 
+      <!-- Edit Flight Modal Drawer -->
+      <div class="modal-drawer" id="edit-flight-modal">
+        <div class="modal-content" style="background: #0d0d10; border-top-left-radius: 32px; border-top-right-radius: 32px; max-height: 90%;">
+          <div class="modal-close-handle" id="edit-modal-close-handle"></div>
+          
+          <div class="modal-header" style="padding: 20px 24px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div>
+              <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">Editar Voo</h2>
+              <span id="edit-modal-flight-title" style="font-size: 13px; color: var(--text-secondary)">-</span>
+            </div>
+            <button type="button" class="header-action-btn" id="edit-modal-close-btn" style="width: 32px; height: 32px; font-size: 12px; border-radius: 50%; background: rgba(255,255,255,0.05); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+            <form id="edit-flight-form" style="display: flex; flex-direction: column; gap: 14px;">
+              <input type="hidden" id="edit-form-flight-id">
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Nº do Voo</label>
+                  <input type="text" id="edit-form-flight-num" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Data do Voo</label>
+                  <input type="date" id="edit-form-date" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Origem (IATA)</label>
+                  <input type="text" id="edit-form-dep-code" maxlength="3" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px; text-transform: uppercase;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Destino (IATA)</label>
+                  <input type="text" id="edit-form-arr-code" maxlength="3" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px; text-transform: uppercase;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Partida (Local)</label>
+                  <input type="time" id="edit-form-dep-time" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chegada (Local)</label>
+                  <input type="time" id="edit-form-arr-time" required style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Assento</label>
+                  <input type="text" id="edit-form-seat" placeholder="Ex: 12A" style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Modelo Aeronave</label>
+                  <input type="text" id="edit-form-aircraft" placeholder="Ex: Airbus A320" style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Prefixo (Tail)</label>
+                  <input type="text" id="edit-form-tail" placeholder="Ex: PR-YVT" style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Localizador (Reserva)</label>
+                  <input type="text" id="edit-form-booking" placeholder="Ex: ABCDEF" style="width: 100%; box-sizing: border-box; background: #202124 !important; color: #fff !important; border: 1px solid #3c4043 !important; padding: 10px; border-radius: 10px; font-size: 14px; text-transform: uppercase;">
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                <button type="submit" style="background: var(--accent-pro); color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;">Salvar Alterações</button>
+                <button type="button" id="edit-form-delete-btn" style="background: #ff453a; color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;">Apagar Voo</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Context Menu for past flights -->
+      <div id="flight-context-menu" class="context-menu" style="display: none; position: fixed; z-index: 10000; min-width: 160px; background: rgba(30, 30, 35, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); backdrop-filter: blur(10px);">
+        <button type="button" id="context-menu-edit-btn" class="context-menu-btn" style="width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 10px 14px; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; transition: background 0.2s;">
+          <span style="font-size: 16px;">✏️</span> Editar Voo
+        </button>
+        <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 0;"></div>
+        <button type="button" id="context-menu-cancel-btn" class="context-menu-btn" style="width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 10px 14px; border-radius: 8px; color: #ff453a; font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; transition: background 0.2s;">
+          <span style="font-size: 16px;">✕</span> Cancelar
+        </button>
+      </div>
+
       <!-- iOS Physical Home Screen Indicator Bar -->
       <div style="width: 136px; height: 5px; background: rgba(255, 255, 255, 0.35); border-radius: 10px; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 110; pointer-events: none;"></div>
       
     </div>
   </div>
 
-  <!-- Sincronizador Real (Gmail/Outlook Integration) -->
-  <div class="modal-drawer" id="email-sync-modal">
-    <div class="modal-content" style="max-height: 85%; width: 90%; max-width: 500px; background: #0c0c0f; overflow-y: auto;">
-      <div class="modal-close-handle"></div>
-      <div class="modal-header">
-        <div>
-          <h2 id="email-modal-title" style="font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
-            <span>🔄</span> Sincronizar E-mail Real
-          </h2>
-          <span style="font-size: 11px; color: var(--accent-pro); font-weight: 600;"> Flighty Pro Local Sync Engine</span>
-        </div>
-        <button class="header-action-btn" id="email-modal-close" style="width: 32px; height: 32px; font-size: 12px;">✕</button>
-      </div>
-      <div class="modal-body" style="text-align: left; display: flex; flex-direction: column; gap: 20px; padding: 20px 24px;">
-        
-        <!-- Supabase Cloud Sync Section -->
-        <div id="supabase-sync-card" style="background: rgba(10, 132, 255, 0.06); border: 1px solid rgba(10, 132, 255, 0.2); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; font-family: var(--font-sans);">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <span style="font-size: 20px;">☁️</span>
-              <div>
-                <strong style="color: #fff; display: block; font-size: 13px;">Sincronização Supabase Cloud</strong>
-                <span id="supabase-status-lbl" style="font-size: 11px; color: var(--text-secondary);">Desconectado (Modo Local)</span>
-              </div>
-            </div>
-            <button type="button" id="supabase-auth-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">
-              Conectar
-            </button>
-          </div>
-          
-          <!-- Hidden Login/Signup Form -->
-          <div id="supabase-auth-form" style="display: none; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 4px;">
-            <input type="email" id="supabase-email-input" placeholder="E-mail" style="background: #18181f; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-sans);" />
-            <input type="password" id="supabase-password-input" placeholder="Senha" style="background: #18181f; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-sans);" />
-            <div style="display: flex; gap: 8px; margin-top: 4px;">
-              <button type="button" id="supabase-login-btn" style="flex: 1; background: var(--info-blue); border: none; color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Entrar</button>
-              <button type="button" id="supabase-signup-btn" style="flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Cadastrar</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Segurança Local & Privacidade Banner -->
-        <div style="background: rgba(184, 124, 248, 0.06); border: 1px solid rgba(184, 124, 248, 0.2); padding: 12px 16px; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 20px;">🛡️</span>
-          <div style="font-size: 12px; line-height: 1.45; color: var(--text-secondary);">
-            <strong style="color: #fff; display: block; margin-bottom: 2px;">Sua privacidade é nossa prioridade</strong>
-            Seus dados e senhas são processados **100% localmente no seu computador** via script Python. Seus e-mails nunca saem da sua máquina e nunca são enviados a servidores externos.
-          </div>
-        </div>
-
-        <!-- Passo 1: Abrir Terminal -->
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span style="background: var(--accent-pro); color: #000; font-weight: 800; font-size: 11px; width: 18px; height: 18px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%;">1</span>
-            <h4 style="font-size: 14px; font-weight: 600; color: #fff; margin: 0;">Abra o Terminal do Mac</h4>
-          </div>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-left: 26px; line-height: 1.4;">
-            Pressione <kbd style="background: #222; border: 1px solid #444; border-radius: 3px; padding: 1px 4px; font-size: 10px; color: #fff;">Cmd ⌘ + Espaço</kbd>, digite <strong>Terminal</strong> e pressione <kbd style="background: #222; border: 1px solid #444; border-radius: 3px; padding: 1px 4px; font-size: 10px; color: #fff;">Enter ↵</kbd>.
-          </p>
-        </div>
-
-        <!-- Passo 2: Copiar e Rodar Comando -->
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span style="background: var(--accent-pro); color: #000; font-weight: 800; font-size: 11px; width: 18px; height: 18px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%;">2</span>
-            <h4 style="font-size: 14px; font-weight: 600; color: #fff; margin: 0;">Copie e Cole o Comando</h4>
-          </div>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-left: 26px; margin-bottom: 10px; line-height: 1.4;">
-            Copie o comando abaixo, cole-o no Terminal e pressione <kbd style="background: #222; border: 1px solid #444; border-radius: 3px; padding: 1px 4px; font-size: 10px; color: #fff;">Enter ↵</kbd>:
-          </p>
-          <div style="background: #000; border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 14px; margin-left: 26px; display: flex; flex-direction: column; gap: 10px;">
-            <code style="font-family: monospace; font-size: 11px; color: var(--accent-pro); word-break: break-all; line-height: 1.4;">python3 "/Users/iancapo/APPs/Flighty IAN/sync_emails.py"</code>
-            <button type="button" id="copy-command-btn" style="background: linear-gradient(135deg, #b87cf8, #7a3bef); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s; font-family: var(--font-sans);">
-              📋 Copiar Comando Terminal
-            </button>
-          </div>
-        </div>
-
-        <!-- Passo 3: Criar Senha de App -->
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span style="background: var(--accent-pro); color: #000; font-weight: 800; font-size: 11px; width: 18px; height: 18px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%;">3</span>
-            <h4 style="font-size: 14px; font-weight: 600; color: #fff; margin: 0;">Gere sua Senha de App</h4>
-          </div>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-left: 26px; line-height: 1.4; margin-bottom: 8px;">
-            O script pedirá seu e-mail e uma <strong>Senha de App</strong> (App Password). Senhas normais são bloqueadas pelo Gmail/Outlook. Como gerar em 30 segundos:
-          </p>
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px; margin-left: 26px; display: flex; flex-direction: column; gap: 10px; font-size: 11.5px; line-height: 1.4;">
-            <div>
-              <strong style="color: #fff; display: block; margin-bottom: 2px;">🔴 Se for Gmail:</strong>
-              1. Acesse <a href="https://myaccount.google.com/" target="_blank" style="color: var(--info-blue); text-decoration: underline;">Minha Conta Google</a>.<br>
-              2. Vá em <strong>Segurança</strong> e ative <strong>Verificação em Duas Etapas</strong>.<br>
-              3. Pesquise por <strong>"Senhas de app"</strong> na barra de pesquisa da conta.<br>
-              4. Crie uma com o nome <em>Flighty</em> e use o código de 16 letras gerado!
-            </div>
-            <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
-              <strong style="color: #fff; display: block; margin-bottom: 2px;">🔵 Se for Outlook / Hotmail:</strong>
-              1. Acesse as configurações de Segurança da sua conta Microsoft.<br>
-              2. Ative a Verificação em Duas Etapas e crie uma <strong>Senha de Aplicativo</strong>.<br>
-              3. Certifique-se de ativar o IMAP nas opções de E-mail do seu painel Outlook Web.
-            </div>
-          </div>
-        </div>
-
-        <!-- Passo 4: Atualizar App -->
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span style="background: var(--accent-pro); color: #000; font-weight: 800; font-size: 11px; width: 18px; height: 18px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%;">4</span>
-            <h4 style="font-size: 14px; font-weight: 600; color: #fff; margin: 0;">Carregar Voos Sincronizados</h4>
-          </div>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-left: 26px; line-height: 1.4; margin-bottom: 12px;">
-            Após o script Python do terminal terminar a busca e salvar os voos reais, basta clicar no botão abaixo para atualizar o aplicativo e plotar tudo no mapa e estatísticas!
-          </p>
-          <button type="button" id="reload-app-btn" style="margin-left: 26px; background: var(--success-green); border: none; color: #fff; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; width: calc(100% - 26px); font-family: var(--font-sans);">
-            🔄 Atualizar Aplicativo & Carregar Voos
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Mapbox GL JS Map Engine -->
-  <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+  <!-- MapLibre GL JS Map Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
           
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -857,7 +729,7 @@
       <div class="story-subtitle">My Flight Passport Booklet</div>
     </div>
     <div class="story-map-container">
-      <canvas id="story-canvas-map"></canvas>
+      <canvas id="story-canvas-map" class="story-map-canvas"></canvas>
     </div>
     <div class="story-stats-grid">
       <div class="story-stat-card">

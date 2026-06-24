@@ -72,7 +72,22 @@ AIRPORTS_DB = {
   "CUN": {"lat": 21.0365, "lng": -86.8770, "city": "Cancún"},
   "UNA": {"lat": -15.3512, "lng": -38.9985, "city": "Ilha de Comandatuba"},
   "BYO": {"lat": -21.0119, "lng": -56.3769, "city": "Bonito"},
-  "FOR": {"lat": -3.7758, "lng": -38.5322, "city": "Fortaleza"}
+  "FOR": {"lat": -3.7758, "lng": -38.5322, "city": "Fortaleza"},
+  "BOG": {"lat": 4.7017, "lng": -74.1469, "city": "Bogotá"},
+  "MDE": {"lat": 6.1645, "lng": -75.4227, "city": "Medellín"},
+  "ADZ": {"lat": 12.5767, "lng": -81.7114, "city": "San Andrés"},
+  "SCL": {"lat": -33.3930, "lng": -70.7858, "city": "Santiago"},
+  "CJC": {"lat": -22.4981, "lng": -68.9036, "city": "Calama"},
+  "MVD": {"lat": -34.8384, "lng": -56.0308, "city": "Montevideo"},
+  "POA": {"lat": -29.9939, "lng": -51.1711, "city": "Porto Alegre"},
+  "FLN": {"lat": -27.6702, "lng": -48.5525, "city": "Florianópolis"},
+  "NVT": {"lat": -26.8787, "lng": -48.6510, "city": "Navegantes"},
+  "CXJ": {"lat": -29.1961, "lng": -51.1897, "city": "Caxias do Sul"},
+  "CWB": {"lat": -25.5285, "lng": -49.1758, "city": "Curitiba"},
+  "PMW": {"lat": -10.2900, "lng": -48.3578, "city": "Palmas"},
+  "BSB": {"lat": -15.8692, "lng": -47.9172, "city": "Brasília"},
+  "GYN": {"lat": -16.6322, "lng": -49.2206, "city": "Goiânia"},
+  "CGB": {"lat": -15.6531, "lng": -56.1167, "city": "Cuiabá"}
 }
 
 AIRLINES_DB = {
@@ -208,7 +223,22 @@ def parse_flight_from_text(text, default_date_str="2026-06-25"):
         "cancún": "CUN", "cancun": "CUN",
         "comandatuba": "UNA",
         "bonito": "BYO",
-        "fortaleza": "FOR"
+        "fortaleza": "FOR",
+        "bogotá": "BOG", "bogota": "BOG",
+        "medellín": "MDE", "medellin": "MDE",
+        "san andrés": "ADZ", "san andres": "ADZ",
+        "santiago": "SCL",
+        "calama": "CJC",
+        "montevideo": "MVD", "montevidéu": "MVD",
+        "porto alegre": "POA",
+        "florianópolis": "FLN", "florianopolis": "FLN",
+        "navegantes": "NVT", "itajai": "NVT", "itajají": "NVT",
+        "caxias do sul": "CXJ",
+        "curitiba": "CWB",
+        "palmas": "PMW",
+        "brasília": "BSB", "brasilia": "BSB",
+        "goiânia": "GYN", "goiania": "GYN",
+        "cuiabá": "CGB", "cuiaba": "CGB"
     }
 
     text_lower = text.lower()
@@ -674,10 +704,9 @@ def main():
     print(f"[v] Filtrados {total_matched - total_candidates} e-mails de spam, marketing ou muito antigos.")
     print(f"[v] Identificados {total_candidates} e-mails de voos reais candidatos a serem importados!")
 
-    # Vamos escanear os e-mails candidatos. Para otimizar a velocidade, limitamos aos mais recentes 150 candidatos, 
-    # garantindo que todos os voos de 2015 até 2026 sejam cobertos perfeitamente.
+    # Vamos escanear os e-mails candidatos. Para cobrir todo o histórico solicitado, escaneamos todos os candidatos.
     new_flights = []
-    scan_limit = min(total_candidates, 150)
+    scan_limit = total_candidates
     print(f"[+] Fazendo a análise do corpo de {scan_limit} e-mails candidatos de voos...")
     
     # Processar candidatos de trás para frente (mais recentes primeiro)
