@@ -206,3 +206,50 @@ create policy "Users can view their own badges." on public.user_badges for selec
 
 drop policy if exists "Users can insert their own badges." on public.user_badges;
 create policy "Users can insert their own badges." on public.user_badges for insert with check (auth.uid() = user_id);
+
+-- ===================================================================
+-- 9. Tabela de E-mails Permitidos (Whitelist de Acesso)
+-- ===================================================================
+-- Criada para controlar quais e-mails podem acessar o aplicativo.
+-- Novos e-mails são adicionados automaticamente via trigger ao cadastro
+-- ou manualmente via script sync_emails.py.
+
+create table if not exists public.allowed_emails (
+    email text primary key,
+    added_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    added_by text default 'system'  -- 'system', 'trigger', 'sync_script', 'admin'
+);
+
+-- Habilitar RLS
+alter table public.allowed_emails enable row level security;
+
+-- Qualquer usuário autenticado pode verificar se o seu próprio e-mail está na lista
+drop policy if exists "Users can check their own email in whitelist." on public.allowed_emails;
+create policy "Users can check their own email in whitelist." on public.allowed_emails
+    for select using (email = auth.jwt() ->> 'email');
+
+-- Seed inicial: e-mail do administrador sempre permitido
+insert into public.allowed_emails (email, added_by) values
+    ('ianpietrocapo@gmail.com', 'admin')
+on conflict (email) do nothing;
+
+-- ===================================================================
+-- 10. Trigger: ao criar novo usuário, inserir seu e-mail na whitelist
+-- (garantindo inclusão automática quando novos usuários são adicionados)
+-- ===================================================================
+create or replace function public.handle_new_user_whitelist()
+returns trigger as $$
+begin
+    -- Adiciona o e-mail do novo usuário na lista de permitidos automaticamente
+    insert into public.allowed_emails (email, added_by)
+    values (new.email, 'trigger')
+    on conflict (email) do nothing;
+    return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger para auth.users - executa após cada novo cadastro
+drop trigger if exists on_auth_user_whitelist on auth.users;
+create trigger on_auth_user_whitelist
+    after insert on auth.users
+    for each row execute procedure public.handle_new_user_whitelist();

@@ -19,6 +19,111 @@
 </head>
 <body>
 
+  <!-- ================================================================
+       LOGIN OVERLAY — Full-screen Auth Gate
+       Visible by default; hidden once a whitelisted session is confirmed
+       ================================================================ -->
+  <div id="login-overlay" class="login-overlay">
+    <!-- Animated starfield background -->
+    <div class="login-bg-stars" aria-hidden="true"></div>
+
+    <!-- Floating route arcs decoration -->
+    <svg class="login-bg-arcs" viewBox="0 0 800 500" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+      <path d="M 80 400 Q 280 80 550 200" stroke="rgba(0,122,255,0.18)" stroke-width="1.5" fill="none" stroke-dasharray="6 5"/>
+      <path d="M 0 300 Q 350 50 800 320" stroke="rgba(0,122,255,0.10)" stroke-width="1" fill="none" stroke-dasharray="4 6"/>
+      <path d="M 200 480 Q 500 100 760 300" stroke="rgba(0,122,255,0.12)" stroke-width="1" fill="none" stroke-dasharray="5 7"/>
+      <circle cx="80" cy="400" r="4" fill="rgba(0,122,255,0.35)"/>
+      <circle cx="550" cy="200" r="4" fill="rgba(0,122,255,0.35)"/>
+      <circle cx="800" cy="320" r="4" fill="rgba(0,122,255,0.25)"/>
+      <circle cx="760" cy="300" r="4" fill="rgba(0,122,255,0.25)"/>
+    </svg>
+
+    <!-- Central login card -->
+    <div class="login-card" role="main" aria-label="Tela de login">
+
+      <!-- Logo / Brand -->
+      <div class="login-brand">
+        <div class="login-plane-icon" aria-hidden="true">✈️</div>
+        <h1 class="login-title">Flighty IAN</h1>
+        <p class="login-subtitle">Seu Passaporte de Viagens Pessoal</p>
+      </div>
+
+      <!-- Divider -->
+      <div class="login-divider" aria-hidden="true"></div>
+
+      <!-- Google Sign-In Button -->
+      <button id="login-google-btn" class="login-btn-google" type="button" aria-label="Entrar com Google">
+        <svg class="login-google-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Continuar com Google</span>
+      </button>
+
+      <!-- OR separator -->
+      <div class="login-or-row" aria-hidden="true">
+        <span class="login-or-line"></span>
+        <span class="login-or-text">ou</span>
+        <span class="login-or-line"></span>
+      </div>
+
+      <!-- Email / Password form -->
+      <form id="login-email-form" class="login-form" novalidate>
+        <div class="login-input-group">
+          <label for="login-email-input" class="login-label">E-mail</label>
+          <input type="email" id="login-email-input" class="login-input" placeholder="seuemail@exemplo.com" autocomplete="email" autocapitalize="off" spellcheck="false" required />
+        </div>
+        <div class="login-input-group" id="login-password-group">
+          <label for="login-password-input" class="login-label">Senha</label>
+          <div class="login-input-row">
+            <input type="password" id="login-password-input" class="login-input" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="login-toggle-pw" id="login-toggle-pw-btn" aria-label="Mostrar/ocultar senha">
+              <svg id="login-pw-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Error message area -->
+        <div id="login-error-msg" class="login-error" role="alert" aria-live="polite"></div>
+
+        <!-- Submit buttons -->
+        <button type="submit" id="login-submit-btn" class="login-btn-primary">
+          <span id="login-submit-label">Entrar</span>
+          <svg id="login-submit-spinner" class="login-spinner" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="40" stroke-dashoffset="10"/>
+          </svg>
+        </button>
+
+        <!-- Toggle login/signup mode -->
+        <div class="login-toggle-mode">
+          <span id="login-mode-text">Não tem conta?</span>
+          <button type="button" id="login-mode-switch" class="login-link-btn">Cadastrar</button>
+        </div>
+      </form>
+
+      <!-- Access-restricted notice -->
+      <p class="login-access-notice" id="login-access-notice" style="display:none;">
+        🔒 Acesso restrito. Solicite permissão ao administrador.
+      </p>
+
+    </div><!-- /login-card -->
+  </div><!-- /login-overlay -->
+
+  <!-- Premium Onboarding / Splash Screen -->
+  <div id="splash-screen">
+    <div class="splash-logo-container">
+      <div class="splash-logo">✈️</div>
+      <div class="splash-title">Flighty IAN</div>
+      <div style="font-size: 12px; color: var(--text-secondary); letter-spacing: 0.5px;">Seu Passaporte de Viagens</div>
+    </div>
+    <div class="splash-loader"></div>
+  </div>
+
   <!-- Map Background View (Fills Desktop Background or Top Section on Mobile) -->
   <div id="map-background-container">
     <div id="map"></div>
@@ -54,6 +159,10 @@
           <button class="map-toggle-btn active" id="map-toggle-past">Histórico</button>
           <button class="map-toggle-btn" id="map-toggle-up">Próximos</button>
         </div>
+        <div class="map-route-style-toggle">
+          <button class="map-style-btn active" id="map-style-geodesic">Arco Geodésico</button>
+          <button class="map-style-btn" id="map-style-straight">Linha Reta</button>
+        </div>
         <div class="map-floating-stats" id="map-floating-stats-lbl">9 voos • 10.846 km</div>
       </div>
 
@@ -75,7 +184,7 @@
                   <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                 </svg>
               </button>
-              <button class="header-action-btn" title="Perfil" onclick="resetFlightyDatabase()" style="font-size: 16px;">
+              <button class="header-action-btn" title="Perfil" onclick="document.querySelector('.nav-item[data-tab=\'profile\']').click()" style="font-size: 16px;">
                 👤
               </button>
             </div>
@@ -110,7 +219,7 @@
                   <line x1="12" y1="2" x2="12" y2="15"></line>
                 </svg>
               </button>
-              <button class="header-action-btn" title="Perfil">👤</button>
+              <button class="header-action-btn" title="Perfil" onclick="document.querySelector('.nav-item[data-tab=\'profile\']').click()">👤</button>
             </div>
           </div>
 
@@ -126,121 +235,147 @@
             <button class="selector-btn" onclick="document.getElementById('passport-year-select').value='2025'; onYearChange(); this.parentNode.querySelectorAll('.selector-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">2025</button>
           </div>
 
-          <!-- Physical-style Flight Passport Booklet Card -->
-          <div class="passport-booklet" id="mypassport-booklet-card">
-            <!-- Top Half: Map & Country Flags -->
-            <div class="passport-top-half">
-              <div class="passport-flags-row">
-                <div id="passport-flags">
-                  <span class="flag-icon">🇧🇷</span>
-                  <span class="flag-icon">🇦🇷</span>
-                </div>
-              </div>
-              <canvas id="passport-mini-map"></canvas>
+          <!-- Passport Cover Customizer & Background selection -->
+          <div class="passport-customizer-card">
+            <div class="customizer-title">Cor da Capa do Passaporte</div>
+            <div class="color-swatches-row">
+              <button class="color-swatch active" style="background:#0b2152" data-theme="blue" title="Azul Marinho"></button>
+              <button class="color-swatch" style="background:#6b121a" data-theme="red" title="Vermelho Borgonha"></button>
+              <button class="color-swatch" style="background:#0e3e2b" data-theme="green" title="Verde Floresta"></button>
+              <button class="color-swatch" style="background:#1a1c1e" data-theme="black" title="Preto Slate"></button>
+              <button class="color-swatch" style="background:#2a6b8f" data-theme="azure" title="Azul Celeste"></button>
             </div>
+            <div class="customizer-title" style="margin-top: 4px;">Padrão de Segurança</div>
+            <div class="guilloche-selector-row">
+              <div class="guilloche-option active" data-pattern="1">Padrão 1</div>
+              <div class="guilloche-option" data-pattern="2">Padrão 2</div>
+              <div class="guilloche-option" data-pattern="3">Padrão 3</div>
+            </div>
+          </div>
 
-            <!-- Perforated Divider Line -->
-            <div class="passport-divider"></div>
-
-            <!-- Bottom Half: Identity Information & Stats -->
-            <div class="passport-bottom-half">
-              <div class="passport-title-section">
-                <div class="passport-main-title">FLIGHT PASSPORT</div>
-                <div class="passport-country-title" id="passport-country-name" contenteditable="true">BRASIL</div>
-                <div class="passport-icon-and-num">
-                  <span>📘</span>
-                  <span class="passport-number" id="passport-num-display">FP000001A</span>
+          <!-- Physical-style Flight Passport Folder Wrapper -->
+          <div class="passport-folder" id="passport-folder-wrapper">
+            <div class="passport-booklet" id="mypassport-booklet-card">
+              <div class="passport-hologram-overlay"></div>
+              <!-- Top Half: Map & Country Flags -->
+              <div class="passport-top-half">
+                <div class="passport-flags-row">
+                  <div id="passport-flags">
+                    <span class="flag-icon">🇧🇷</span>
+                    <span class="flag-icon">🇦🇷</span>
+                  </div>
                 </div>
+                <canvas id="passport-mini-map"></canvas>
               </div>
 
-              <div class="passport-info-grid">
-                <!-- Left: Photo with Click-to-Upload Trigger -->
-                <div class="passport-photo-container" id="passport-photo-trigger" title="Clique para alterar a foto">
-                  <img id="passport-photo-img" src="traveler_avatar.png" alt="Foto Passaporte" />
-                  <div class="photo-edit-overlay">Alterar</div>
-                </div>
-                <input type="file" id="passport-photo-input" accept="image/*" style="display: none;" />
+              <!-- Perforated Divider Line -->
+              <div class="passport-divider"></div>
 
-                <!-- Right: Identity Fields -->
-                <div class="passport-details-container">
-                  <div class="passport-field-row">
-                    <div class="passport-field">
-                      <span class="field-label">Type</span>
-                      <span class="field-value" style="border-bottom: none; cursor: default;">FP</span>
-                    </div>
-                    <div class="passport-field">
-                      <span class="field-label">Country</span>
-                      <span class="field-value" style="border-bottom: none; cursor: default;" id="passport-country-code-display">BRA</span>
-                    </div>
-                  </div>
-
-                  <div class="passport-field">
-                    <span class="field-label">Surname</span>
-                    <span class="field-value" id="passport-surname" contenteditable="true" title="Clique para editar o sobrenome">CAPO</span>
-                  </div>
-
-                  <div class="passport-field">
-                    <span class="field-label">Given name</span>
-                    <span class="field-value" id="passport-givenname" contenteditable="true" title="Clique para editar o nome">IAN</span>
-                  </div>
-
-                  <div class="passport-field-row">
-                    <div class="passport-field">
-                      <span class="field-label">Date of issue</span>
-                      <span class="field-value" id="passport-issue-date" contenteditable="true" title="Clique para editar a data de emissão">23 JUN 2026</span>
-                    </div>
-                    <div class="passport-field">
-                      <span class="field-label">Authority</span>
-                      <span class="field-value" style="border-bottom: none; cursor: default;">FLIGHT PASSPORT</span>
-                    </div>
+              <!-- Bottom Half: Identity Information & Stats -->
+              <div class="passport-bottom-half">
+                <div class="passport-title-section">
+                  <div class="passport-main-title">FLIGHT PASSPORT</div>
+                  <div class="passport-country-title" id="passport-country-name" contenteditable="true">BRASIL</div>
+                  <div class="passport-icon-and-num">
+                    <span>📘</span>
+                    <span class="passport-number" id="passport-num-display">FP000001A</span>
                   </div>
                 </div>
+
+                <div class="passport-info-grid">
+                  <!-- Left: Photo with Click-to-Upload Trigger -->
+                  <div class="passport-photo-container" id="passport-photo-trigger" title="Clique para alterar a foto">
+                    <img id="passport-photo-img" src="traveler_avatar.png" alt="Foto Passaporte" />
+                    <div class="photo-edit-overlay">Alterar</div>
+                  </div>
+                  <input type="file" id="passport-photo-input" accept="image/*" style="display: none;" />
+
+                  <!-- Right: Identity Fields -->
+                  <div class="passport-details-container">
+                    <div class="passport-field-row">
+                      <div class="passport-field">
+                        <span class="field-label">Type</span>
+                        <span class="field-value" style="border-bottom: none; cursor: default;">FP</span>
+                      </div>
+                      <div class="passport-field">
+                        <span class="field-label">Country</span>
+                        <span class="field-value" style="border-bottom: none; cursor: default;" id="passport-country-code-display">BRA</span>
+                      </div>
+                    </div>
+
+                    <div class="passport-field">
+                      <span class="field-label">Surname</span>
+                      <span class="field-value" id="passport-surname" contenteditable="true" title="Clique para editar o sobrenome">CAPO</span>
+                    </div>
+
+                    <div class="passport-field">
+                      <span class="field-label">Given name</span>
+                      <span class="field-value" id="passport-givenname" contenteditable="true" title="Clique para editar o nome">IAN</span>
+                    </div>
+
+                    <div class="passport-field-row">
+                      <div class="passport-field">
+                        <span class="field-label">Date of issue</span>
+                        <span class="field-value" id="passport-issue-date" contenteditable="true" title="Clique para editar a data de emissão">23 JUN 2026</span>
+                      </div>
+                      <div class="passport-field">
+                        <span class="field-label">Authority</span>
+                        <span class="field-value" style="border-bottom: none; cursor: default;">FLIGHT PASSPORT</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quick Stats Section inside booklet -->
+                <div class="passport-quick-stats">
+                  <div class="passport-stat-box">
+                    <div class="stat-number-row">
+                      <span class="stat-big-number" id="pass-flights-count">9</span>
+                      <span class="stat-unit">flights</span>
+                    </div>
+                    <!-- Dynamic airline badges -->
+                    <div class="passport-airline-logos" id="passport-airline-logos"></div>
+                  </div>
+
+                  <div class="passport-stat-details">
+                    <div class="passport-sub-stat">
+                      <span class="sub-label">Distance</span>
+                      <span class="sub-value" id="pass-distance-count">10.846 km</span>
+                    </div>
+                    <div class="passport-sub-stat">
+                      <span class="sub-label">Flight Time</span>
+                      <span class="sub-value" id="pass-time-count">18h 57m</span>
+                    </div>
+                    <div class="passport-sub-stat">
+                      <span class="sub-label">Airlines</span>
+                      <span class="sub-value" id="pass-airlines-count">4</span>
+                    </div>
+                    <div class="passport-sub-stat">
+                      <span class="sub-label">Airports</span>
+                      <span class="sub-value" id="pass-airports-count">12</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Machine Readable Zone (MRZ) -->
+                <div class="passport-mrz">
+                  <div id="passport-mrz-line1">P&lt;FP&lt;CAPO&lt;&lt;IAN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                  <div id="passport-mrz-line2">FP000001A&lt;260623&lt;FLIGHTPASSPORT.APP&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                </div>
+
               </div>
-
-              <!-- Quick Stats Section inside booklet -->
-              <div class="passport-quick-stats">
-                <div class="passport-stat-box">
-                  <div class="stat-number-row">
-                    <span class="stat-big-number" id="pass-flights-count">9</span>
-                    <span class="stat-unit">flights</span>
-                  </div>
-                  <!-- Dynamic airline badges -->
-                  <div class="passport-airline-logos" id="passport-airline-logos"></div>
-                </div>
-
-                <div class="passport-stat-details">
-                  <div class="passport-sub-stat">
-                    <span class="sub-label">Distance</span>
-                    <span class="sub-value" id="pass-distance-count">10.846 km</span>
-                  </div>
-                  <div class="passport-sub-stat">
-                    <span class="sub-label">Flight Time</span>
-                    <span class="sub-value" id="pass-time-count">18h 57m</span>
-                  </div>
-                  <div class="passport-sub-stat">
-                    <span class="sub-label">Airlines</span>
-                    <span class="sub-value" id="pass-airlines-count">4</span>
-                  </div>
-                  <div class="passport-sub-stat">
-                    <span class="sub-label">Airports</span>
-                    <span class="sub-value" id="pass-airports-count">12</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Machine Readable Zone (MRZ) -->
-              <div class="passport-mrz">
-                <div id="passport-mrz-line1">P&lt;FP&lt;CAPO&lt;&lt;IAN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
-                <div id="passport-mrz-line2">FP000001A&lt;260623&lt;FLIGHTPASSPORT.APP&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
-              </div>
-
             </div>
           </div>
 
           <!-- Share Action Button -->
-          <button class="download-passport-btn" id="download-passport-btn">
-            <span>💾</span> Baixar Passaporte (PNG)
-          </button>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="download-passport-btn" id="download-passport-btn" style="margin-bottom: 0;">
+              <span>💾</span> Baixar Passaporte (PNG)
+            </button>
+            <button class="download-passport-btn" id="download-story-btn" style="background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); margin-top: 0; margin-bottom: 24px;">
+              <span>📸</span> Gerar Story do Instagram (9:16)
+            </button>
+          </div>
 
 
            <!-- Indigo Most Flown Aircraft Card -->
@@ -258,9 +393,13 @@
             <div class="aircraft-photo-box" style="margin-top: 14px; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border); height: 140px;">
               <img src="boeing_737.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9; filter: brightness(0.9) contrast(1.05);" />
             </div>
-            
-            <div style="text-align: center; margin-top: 14px; font-size: 13px; color: var(--info-blue); font-weight: 500;">
-              Exibir todas as estatísticas da frota ➔
+          </div>
+
+          <!-- Visa Stamps (Visited Countries) -->
+          <div class="visa-stamps-section">
+            <h3 class="visa-stamps-header">🛃 Carimbos de Visto Autorizados</h3>
+            <div class="visa-stamps-grid" id="passport-visa-stamps-grid">
+              <!-- Dynamically loaded stamps of visited countries -->
             </div>
           </div>
 
@@ -359,31 +498,118 @@
           </div>
         </section>
 
+        <!-- ================= PROFILE TAB PANEL ================= -->
+        <section id="profile-panel" class="tab-panel">
+          <div class="panel-header-row">
+            <h1 class="panel-title">Meu Perfil</h1>
+          </div>
+          
+          <div class="profile-avatar-row">
+            <div class="profile-avatar-box" id="profile-avatar-trigger" style="cursor: pointer;" title="Clique para alterar foto">
+              <img id="profile-avatar-img" src="traveler_avatar.png" alt="Avatar" />
+            </div>
+            <div class="profile-info-box">
+              <span class="profile-name" id="profile-display-name">IAN CAPO</span>
+              <span class="profile-sub" id="profile-display-role">Viajante Frequente</span>
+            </div>
+          </div>
+
+          <!-- Premium Pro Unlock Card -->
+          <div class="premium-pro-card">
+            <div class="pro-badge pro-badge-gold" style="margin-bottom: 8px;">Flighty Pro Local</div>
+            <h3 style="color: var(--text-primary); font-size:16px; margin-bottom: 6px;">Recursos Premium Desbloqueados</h3>
+            <p style="font-size:12.5px; color: var(--text-secondary); line-height: 1.4;">
+              Sua base de dados mundial off-line de ~8.500 aeroportos e 126 companhias aéreas está ativa no navegador. Importador de e-mails local e importação de passagens CSV estão liberados.
+            </p>
+          </div>
+
+          <!-- Advanced Actions & Options -->
+          <h3 class="customizer-title" style="margin-bottom: 10px;">Ações Avançadas</h3>
+          <div class="settings-menu-group">
+            <div class="settings-item csv-upload-btn-wrapper">
+              <div class="settings-item-label">
+                <span>📥</span> Importar Passagens (CSV)
+              </div>
+              <input type="file" id="csv-file-input" accept=".csv" />
+            </div>
+            <div class="settings-item" onclick="resetFlightyDatabase()">
+              <div class="settings-item-label" style="color: var(--warning-red);">
+                <span>🗑️</span> Redefinir Banco de Dados Local
+              </div>
+            </div>
+          </div>
+
+          <!-- Mapbox API Key Settings Configuration -->
+          <h3 class="customizer-title" style="margin-bottom: 10px;">Token do Mapa (Mapbox)</h3>
+          <div class="settings-menu-group" style="margin-bottom: 16px;">
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+                Para carregar o mapa interativo em 3D, cole seu Token Público do Mapbox (inicia com <code>pk.</code>) abaixo:
+              </span>
+              <div style="display: flex; gap: 8px;">
+                <input type="password" id="settings-mapbox-token" placeholder="pk.eyJ1..." style="flex: 1; background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none; font-family: monospace;" />
+                <button type="button" id="save-mapbox-token-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">Salvar</button>
+              </div>
+              <span id="mapbox-token-status" style="font-size: 10.5px; color: var(--text-secondary); display: none;"></span>
+            </div>
+          </div>
+
+          <!-- Cloud Connection Status Integration -->
+          <h3 class="customizer-title" style="margin-bottom: 10px;">Sincronização Cloud</h3>
+          <div id="profile-cloud-sync-card" style="background: rgba(10, 132, 255, 0.06); border: 1px solid rgba(10, 132, 255, 0.2); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <span style="font-size: 20px;">☁️</span>
+                <div>
+                  <strong style="color: var(--text-primary); display: block; font-size: 13px;">Supabase Cloud Database</strong>
+                  <span id="profile-cloud-status" style="font-size: 11px; color: var(--text-secondary);">Desconectado</span>
+                </div>
+              </div>
+              <button type="button" id="profile-cloud-auth-btn" style="background: var(--info-blue); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);">
+                Conectar
+              </button>
+            </div>
+            
+            <div id="profile-cloud-auth-form" style="display: none; flex-direction: column; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 10px; margin-top: 4px;">
+              <input type="email" id="profile-cloud-email" placeholder="E-mail" style="background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none;" />
+              <input type="password" id="profile-cloud-password" placeholder="Senha" style="background: #f1f2f4; border: 1px solid var(--card-border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none;" />
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button type="button" id="profile-cloud-login-btn" style="flex: 1; background: var(--info-blue); border: none; color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Entrar</button>
+                <button type="button" id="profile-cloud-signup-btn" style="flex: 1; background: transparent; border: 1px solid rgba(0, 0, 0, 0.15); color: var(--text-primary); padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Cadastrar</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
-      <!-- Dynamic Bottom Navigation Menu -->
-      <nav class="bottom-nav-bar">
-        <div class="nav-item active" data-tab="my-flights">
-          <span class="nav-icon">✈️</span>
-          <span>My Flights</span>
-        </div>
-        <div class="nav-item" data-tab="map-tab">
-          <span class="nav-icon">🗺️</span>
-          <span>Mapa</span>
-        </div>
-
-        <div class="nav-item" data-tab="passport">
-          <span class="nav-icon">🪪</span>
-          <span>Passport</span>
-        </div>
-        <div class="nav-item" data-tab="search" style="position: relative;">
-          <span class="nav-icon">🔍</span>
-          <span>Adicionar</span>
+      <!-- Dynamic Bottom Navigation Menu Container -->
+      <div class="bottom-nav-container">
+        <nav class="bottom-nav-bar">
+          <div class="nav-item active" data-tab="my-flights">
+            <span class="nav-icon">✈️</span>
+            <span>My Flights</span>
+          </div>
+          <div class="nav-item" data-tab="map-tab">
+            <span class="nav-icon">🗺️</span>
+            <span>Mapa</span>
+          </div>
+          <div class="nav-item" data-tab="passport">
+            <span class="nav-icon">🪪</span>
+            <span>Passport</span>
+          </div>
+          <div class="nav-item" data-tab="profile">
+            <span class="nav-icon">👤</span>
+            <span>Perfil</span>
+          </div>
+        </nav>
+        <button type="button" class="nav-search-btn" data-tab="search" style="position: relative;">
+          <span>🔍</span>
           <!-- Dynamic count badge -->
           <span id="upcoming-badge-count" class="pro-badge" 
-                style="position: absolute; top: 6px; right: 18px; font-size: 9px; padding: 1px 5px; border-radius: 10px; background: var(--info-blue); box-shadow: none;">0</span>
-        </div>
-      </nav>
+                style="position: absolute; top: 6px; right: 6px; font-size: 9px; padding: 1px 5px; border-radius: 10px; background: var(--info-blue); box-shadow: none;">0</span>
+        </button>
+      </div>
 
       <!-- Dynamic Flight details Modal Sheet Drawer ("Where's My Plane?") -->
       <div class="modal-drawer" id="flight-details-modal">
@@ -623,6 +849,38 @@
           
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Offscreen Instagram Story Canvas Container -->
+  <div id="story-export-frame">
+    <div class="story-header">
+      <div class="story-title">Flighty IAN</div>
+      <div class="story-subtitle">My Flight Passport Booklet</div>
+    </div>
+    <div class="story-map-container">
+      <canvas id="story-canvas-map"></canvas>
+    </div>
+    <div class="story-stats-grid">
+      <div class="story-stat-card">
+        <div class="story-stat-number" id="story-stat-flights">0</div>
+        <div class="story-stat-label">Voos</div>
+      </div>
+      <div class="story-stat-card">
+        <div class="story-stat-number" id="story-stat-distance">0 km</div>
+        <div class="story-stat-label">Distância</div>
+      </div>
+      <div class="story-stat-card">
+        <div class="story-stat-number" id="story-stat-time">0h</div>
+        <div class="story-stat-label">Tempo de Voo</div>
+      </div>
+      <div class="story-stat-card">
+        <div class="story-stat-number" id="story-stat-countries">0</div>
+        <div class="story-stat-label">Países</div>
+      </div>
+    </div>
+    <div class="story-footer">
+      flightpassport.app
+    </div>
+  </div>
 
   <!-- Core Data and Driver Logic -->
   <script src="mockData.js?v=1.0.2"></script>

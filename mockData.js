@@ -1,6 +1,6 @@
 // Flighty IAN - Mock Data Registry
 
-// Precise coordinates for the 13 Brazilian & Argentine airports from the flight history
+// Precise coordinates for all airports from flight history
 window.AIRPORTS = {
   "CNF": { code: "CNF", city: "Belo Horizonte", name: "Confins International", lat: -19.6244, lng: -43.9719 },
   "IGU": { code: "IGU", city: "Foz do Iguaçu", name: "Foz do Iguaçu International", lat: -25.5977, lng: -54.4851 },
@@ -35,7 +35,41 @@ window.AIRPORTS = {
   "BYO": { code: "BYO", city: "Bonito", name: "Bonito Regional Airport", lat: -21.0119, lng: -56.3769 },
   "FOR": { code: "FOR", city: "Fortaleza", name: "Pinto Martins International", lat: -3.7758, lng: -38.5322 },
   "STM": { code: "STM", city: "Santarém", name: "Santarém Airport", lat: -2.4247, lng: -54.7861 },
-  "BSB": { code: "BSB", city: "Brasília", name: "Brasília International", lat: -15.8692, lng: -47.9172 }
+  "BSB": { code: "BSB", city: "Brasília", name: "Brasília International", lat: -15.8692, lng: -47.9172 },
+  "BRU": { code: "BRU", city: "Bruxelas", name: "Brussels Airport", lat: 50.9002, lng: 4.4844 },
+  "JNB": { code: "JNB", city: "Joanesburgo", name: "O.R. Tambo International", lat: -26.1392, lng: 28.2460 },
+  "PLZ": { code: "PLZ", city: "Port Elizabeth", name: "Chief Dawid Stuurman", lat: -33.9847, lng: 25.6186 },
+  "CPT": { code: "CPT", city: "Cidade do Cabo", name: "Cape Town International", lat: -33.9648, lng: 18.6017 },
+  "CWB": { code: "CWB", city: "Curitiba", name: "Afonso Pena International", lat: -25.5285, lng: -49.1758 },
+  "MAO": { code: "MAO", city: "Manaus", name: "Eduardo Gomes International", lat: -3.0386, lng: -60.0497 },
+  "LGW": { code: "LGW", city: "Londres", name: "Gatwick Airport", lat: 51.1481, lng: -0.1903 },
+  "CPH": { code: "CPH", city: "Copenhagen", name: "Copenhagen Airport", lat: 55.6181, lng: 12.6561 },
+  "HKT": { code: "HKT", city: "Phuket", name: "Phuket International", lat: 8.1132, lng: 98.3064 },
+  "BKK": { code: "BKK", city: "Bangkok", name: "Suvarnabhumi Airport", lat: 13.6896, lng: 100.7501 },
+  "VIX": { code: "VIX", city: "Vitória", name: "Eurico de Aguiar Salles", lat: -20.2581, lng: -40.2864 },
+  "MCP": { code: "MCP", city: "Macapá", name: "Alberto Alcolumbre International", lat: 0.0507, lng: -51.0703 },
+  "POA": { code: "POA", city: "Porto Alegre", name: "Salgado Filho International", lat: -29.9939, lng: -51.1711 },
+  "CXJ": { code: "CXJ", city: "Caxias do Sul", name: "Hugo Cantergiani Airport", lat: -29.1953, lng: -51.1892 },
+  "AJU": { code: "AJU", city: "Aracaju", name: "Santa Maria Airport", lat: -10.9847, lng: -37.0733 },
+  "LIM": { code: "LIM", city: "Lima", name: "Jorge Chávez International", lat: -12.0219, lng: -77.1144 },
+  "CUZ": { code: "CUZ", city: "Cusco", name: "Alejandro Velasco Astete", lat: -13.5356, lng: -71.9389 },
+  "SSA": { code: "SSA", city: "Salvador", name: "Deputado Luís Eduardo Magalhães", lat: -12.9086, lng: -38.3225 },
+  "AMS": { code: "AMS", city: "Amsterdã", name: "Schiphol Airport", lat: 52.3086, lng: 4.7639 },
+  "RIX": { code: "RIX", city: "Riga", name: "Riga International", lat: 56.9236, lng: 24.0022 },
+  "LED": { code: "LED", city: "São Petersburgo", name: "Pulkovo Airport", lat: 59.8003, lng: 30.2625 },
+  "SVO": { code: "SVO", city: "Moscou", name: "Sheremetyevo International", lat: 55.9725, lng: 37.4147 },
+  "PRG": { code: "PRG", city: "Praga", name: "Václav Havel Airport", lat: 50.1008, lng: 14.2600 },
+  "BUD": { code: "BUD", city: "Budapeste", name: "Budapest Liszt Ferenc", lat: 47.4298, lng: 19.2611 },
+  "MXP": { code: "MXP", city: "Milão", name: "Malpensa Airport", lat: 45.6306, lng: 8.7281 },
+  "SLZ": { code: "SLZ", city: "São Luís", name: "Marechal Cunha Machado", lat: -2.5869, lng: -44.2361 },
+  "REC": { code: "REC", city: "Recife", name: "Gilberto Freyre International", lat: -8.1258, lng: -34.9240 },
+  "THE": { code: "THE", city: "Teresina", name: "Senador Petrônio Portella", lat: -5.0606, lng: -42.8244 },
+  "RBR": { code: "RBR", city: "Rio Branco", name: "Plácido de Castro International", lat: -9.8683, lng: -67.8981 },
+  "ZRH": { code: "ZRH", city: "Zurique", name: "Zurich Airport", lat: 47.4582, lng: 8.5481 },
+  "KEF": { code: "KEF", city: "Keflavík", name: "Keflavík International", lat: 63.9850, lng: -22.6056 },
+  "BSL": { code: "BSL", city: "Basileia", name: "EuroAirport Basel", lat: 47.5900, lng: 7.5292 },
+  "VCE": { code: "VCE", city: "Veneza", name: "Venice Marco Polo", lat: 45.5053, lng: 12.3519 },
+  "FRA": { code: "FRA", city: "Frankfurt", name: "Frankfurt Airport", lat: 50.0379, lng: 8.5622 }
 };
 
 window.AIRLINES = {
@@ -52,243 +86,143 @@ window.AIRLINES = {
   "UA": { code: "UA", name: "United Airlines", color: "#1D5F8A" },
   "DL": { code: "DL", name: "Delta Air Lines", color: "#E01933" },
   "AF": { code: "AF", name: "Air France", color: "#002244" },
-  "LH": { code: "LH", name: "Lufthansa", color: "#FFCC00" },
+  "LH": { code: "LH", name: "Lufthansa", color: "#071D49" },
   "BA": { code: "BA", name: "British Airways", color: "#071D49" },
   "QR": { code: "QR", name: "Qatar Airways", color: "#5C0632" },
-  "IB": { code: "IB", name: "Iberia", color: "#C20E1A" }
+  "IB": { code: "IB", name: "Iberia", color: "#C20E1A" },
+  "FA": { code: "FA", name: "FlySafair", color: "#00AEEF" },
+  "SKU": { code: "SKU", name: "SKY Airline", color: "#800080" },
+  "SN": { code: "SN", name: "Brussels Airlines", color: "#E51937" },
+  "D8": { code: "D8", name: "Norwegian", color: "#D81A21" },
+  "BT": { code: "BT", name: "airBaltic", color: "#A7D310" },
+  "W6": { code: "W6", name: "Wizz Air", color: "#C9147E" },
+  "LX": { code: "LX", name: "Swiss", color: "#E10915" },
+  "U2": { code: "U2", name: "easyJet", color: "#FF6600" },
+  "VY": { code: "VY", name: "Vueling", color: "#FFD200" }
 };
 
-// Past flights pre-loaded from screenshots
-// Math verification to match screenshots exactly:
-// Total flights: 9
-// Distance sum: 1140+1070+1120+1371+360+2460+2480+445+400 = 10,846 km (Matches 10.846 km exactly!)
-// Flight time sum: 120+110+130+155+65+210+215+67+65 = 1137 min = 18h 57m (Matches 18h 57m exactly!)
-// Total delay sum: 12+18+6+10+8 = 54 mins (Matches 54 minutes lost exactly!)
-// Delayed flights count: 5. Average delay = 54/5 = 10.8m (rounds/floors to "Delayed flights averaged 10m late")
-// Airlines count: 4 (Azul, GOL, Aerolíneas Argentinas, Flybondi)
-// Unique airports count: 12 (CNF, IGU, IGR, AEP, REL, USH, GIG, VCP, BEL, GRU, LDB, SDU)
-// Most flown aircraft: B737-800 (3 flights: AR 1892, AR 1892, and FO 5101)
+// Past flights pre-loaded from screenshots + 2025/2026 accessed flights
 window.PAST_FLIGHTS = [
-  {
-    id: "past_1",
-    flightNumber: "AD 2599",
-    airline: "AD",
-    from: "CNF",
-    to: "IGU",
-    date: "2026-01-27",
-    depTime: "10:00",
-    arrTime: "12:00",
-    duration: 120, // 2h 00m
-    distance: 1140,
-    delay: 0,
-    aircraft: "E195-E2",
-    tailNumber: "PR-YVB",
-    status: "Completed"
-  },
-  {
-    id: "past_2",
-    flightNumber: "FO 5101",
-    airline: "FO",
-    from: "IGR",
-    to: "AEP",
-    date: "2026-01-28",
-    depTime: "14:30",
-    arrTime: "16:20",
-    duration: 110, // 1h 50m
-    distance: 1070,
-    delay: 12,
-    aircraft: "B737-800",
-    tailNumber: "LV-HKN",
-    status: "Completed"
-  },
-  {
-    id: "past_3",
-    flightNumber: "AR 1892",
-    airline: "AR",
-    from: "AEP",
-    to: "REL",
-    date: "2026-01-29",
-    depTime: "08:15",
-    arrTime: "10:25",
-    duration: 130, // 2h 10m
-    distance: 1120,
-    delay: 18,
-    aircraft: "B737-800",
-    tailNumber: "LV-FVO",
-    status: "Completed"
-  },
-  {
-    id: "past_4",
-    flightNumber: "AR 1892",
-    airline: "AR",
-    from: "REL",
-    to: "USH",
-    date: "2026-01-29",
-    depTime: "11:10",
-    arrTime: "13:45",
-    duration: 155, // 2h 35m
-    distance: 1371,
-    delay: 6,
-    aircraft: "B737-800",
-    tailNumber: "LV-FVO",
-    status: "Completed"
-  },
-  {
-    id: "past_5",
-    flightNumber: "AD 4450",
-    airline: "AD",
-    from: "GIG",
-    to: "VCP",
-    date: "2026-03-26",
-    depTime: "07:15",
-    arrTime: "08:20",
-    duration: 65, // 1h 05m
-    distance: 360,
-    delay: 0,
-    aircraft: "ATR 72-600",
-    tailNumber: "PR-AKC",
-    status: "Completed"
-  },
-  {
-    id: "past_6",
-    flightNumber: "AD 4070",
-    airline: "AD",
-    from: "VCP",
-    to: "BEL",
-    date: "2026-03-26",
-    depTime: "09:30",
-    arrTime: "13:00",
-    duration: 210, // 3h 30m
-    distance: 2460,
-    delay: 0,
-    aircraft: "A320neo",
-    tailNumber: "PR-YRI",
-    status: "Completed"
-  },
-  {
-    id: "past_7",
-    flightNumber: "G3 1517",
-    airline: "G3",
-    from: "BEL",
-    to: "GRU",
-    date: "2026-04-13",
-    depTime: "14:10",
-    arrTime: "17:45",
-    duration: 215, // 3h 35m
-    distance: 2480,
-    delay: 10,
-    aircraft: "B737-MAX8",
-    tailNumber: "PR-XMR",
-    status: "Completed"
-  },
-  {
-    id: "past_8",
-    flightNumber: "AD 4584",
-    airline: "AD",
-    from: "LDB",
-    to: "VCP",
-    date: "2026-04-26",
-    depTime: "11:35",
-    arrTime: "12:42",
-    duration: 67, // 1h 07m
-    distance: 445,
-    delay: 8,
-    aircraft: "ATR 72-600",
-    tailNumber: "PR-AKG",
-    status: "Completed"
-  },
-  {
-    id: "past_9",
-    flightNumber: "AD 5086",
-    airline: "AD",
-    from: "VCP",
-    to: "SDU",
-    date: "2026-04-27",
-    depTime: "15:40",
-    arrTime: "16:45",
-    duration: 65, // 1h 05m
-    distance: 400,
-    delay: 0,
-    aircraft: "E195-E2",
-    tailNumber: "PR-YVD",
-    status: "Completed"
-  }
+  // --- 2026 Past Flights ---
+  { id: "past_1", flightNumber: "AD 2599", airline: "AD", from: "CNF", to: "IGU", date: "2026-01-27", depTime: "10:00", arrTime: "12:00", duration: 120, distance: 1140, delay: 0, aircraft: "E195-E2", tailNumber: "PR-YVB", status: "Completed" },
+  { id: "past_2", flightNumber: "FO 5101", airline: "FO", from: "IGR", to: "AEP", date: "2026-01-28", depTime: "14:30", arrTime: "16:20", duration: 110, distance: 1070, delay: 12, aircraft: "B737-800", tailNumber: "LV-HKN", status: "Completed" },
+  { id: "past_3", flightNumber: "AR 1892", airline: "AR", from: "AEP", to: "REL", date: "2026-01-29", depTime: "08:15", arrTime: "10:25", duration: 130, distance: 1120, delay: 18, aircraft: "B737-800", tailNumber: "LV-FVO", status: "Completed" },
+  { id: "past_4", flightNumber: "AR 1892", airline: "AR", from: "REL", to: "USH", date: "2026-01-29", depTime: "11:10", arrTime: "13:45", duration: 155, distance: 1371, delay: 6, aircraft: "B737-800", tailNumber: "LV-FVO", status: "Completed" },
+  { id: "past_5", flightNumber: "AD 4450", airline: "AD", from: "GIG", to: "VCP", date: "2026-03-26", depTime: "07:15", arrTime: "08:20", duration: 65, distance: 360, delay: 0, aircraft: "ATR 72-600", tailNumber: "PR-AKC", status: "Completed" },
+  { id: "past_6", flightNumber: "AD 4070", airline: "AD", from: "VCP", to: "BEL", date: "2026-03-26", depTime: "09:30", arrTime: "13:00", duration: 210, distance: 2460, delay: 0, aircraft: "A320neo", tailNumber: "PR-YRI", status: "Completed" },
+  { id: "past_7", flightNumber: "G3 1517", airline: "G3", from: "BEL", to: "GRU", date: "2026-04-13", depTime: "14:10", arrTime: "17:45", duration: 215, distance: 2480, delay: 10, aircraft: "B737-MAX8", tailNumber: "PR-XMR", status: "Completed" },
+  { id: "past_8", flightNumber: "AD 4584", airline: "AD", from: "LDB", to: "VCP", date: "2026-04-26", depTime: "11:35", arrTime: "12:42", duration: 67, distance: 445, delay: 8, aircraft: "ATR 72-600", tailNumber: "PR-AKG", status: "Completed" },
+  { id: "past_9", flightNumber: "AD 5086", airline: "AD", from: "VCP", to: "SDU", date: "2026-04-27", depTime: "15:40", arrTime: "16:45", duration: 65, distance: 400, delay: 0, aircraft: "E195-E2", tailNumber: "PR-YVD", status: "Completed" },
+
+  // --- 2025 Past Flights ---
+  { id: "past_10", flightNumber: "AR 1892", airline: "AR", from: "UNA", to: "AEP", date: "2025-10-28", depTime: "11:30", arrTime: "12:45", duration: 391, distance: 2886, delay: 9, aircraft: "B737-800", tailNumber: "PR-YV6", status: "Completed" },
+  { id: "past_11", flightNumber: "AD 2637", airline: "AD", from: "SLZ", to: "BEL", date: "2025-09-24", depTime: "15:10", arrTime: "16:20", duration: 70, distance: 491, status: "Completed" },
+  { id: "past_12", flightNumber: "AD 4378", airline: "AD", from: "VCP", to: "THE", date: "2025-09-16", depTime: "23:50", arrTime: "02:45", duration: 175, distance: 2050, status: "Completed" },
+
+  // --- 2024 Past Flights ---
+  { id: "past_13", flightNumber: "AD 2612", airline: "AD", from: "RBR", to: "CNF", date: "2024-11-13", depTime: "01:15", arrTime: "07:10", duration: 235, distance: 2791, status: "Completed" },
+  { id: "past_14", flightNumber: "AD 2612", airline: "AD", from: "CNF", to: "RBR", date: "2024-11-05", depTime: "22:50", arrTime: "01:20", duration: 270, distance: 2791, status: "Completed" },
+
+  // --- 2023 Past Flights ---
+  { id: "past_15", flightNumber: "LA 8067", airline: "LA", from: "CDG", to: "GRU", date: "2023-12-06", depTime: "13:00", arrTime: "19:50", duration: 650, distance: 9416, status: "Completed", aircraft: "B789" },
+  { id: "past_16", flightNumber: "LX 632", airline: "LX", from: "ZRH", to: "CDG", date: "2023-12-06", depTime: "07:25", arrTime: "08:55", duration: 90, distance: 476, status: "Completed" },
+  { id: "past_17", flightNumber: "EZY 8844", airline: "U2", from: "KEF", to: "LGW", date: "2023-11-30", depTime: "12:20", arrTime: "15:30", duration: 190, distance: 1938, status: "Completed" },
+  { id: "past_18", flightNumber: "U2 8479", airline: "U2", from: "LGW", to: "BSL", date: "2023-11-30", depTime: "07:15", arrTime: "09:55", duration: 100, distance: 684, status: "Completed", aircraft: "A320" },
+  { id: "past_19", flightNumber: "W4 8265", airline: "W6", from: "FCO", to: "KEF", date: "2023-11-19", depTime: "17:45", arrTime: "21:55", duration: 310, distance: 3323, status: "Completed" },
+  { id: "past_20", flightNumber: "VY 6400", airline: "VY", from: "BCN", to: "VCE", date: "2023-11-14", depTime: "06:30", arrTime: "08:20", duration: 110, distance: 953, status: "Completed" },
+  { id: "past_21", flightNumber: "LH 1138", airline: "LH", from: "FRA", to: "BCN", date: "2023-11-04", depTime: "21:00", arrTime: "23:05", duration: 125, distance: 1094, status: "Completed", aircraft: "A321" },
+  { id: "past_22", flightNumber: "LA 8070", airline: "LA", from: "GRU", to: "FRA", date: "2023-11-03", depTime: "23:45", arrTime: "16:25", duration: 760, distance: 9809, status: "Completed", aircraft: "B773" },
+  { id: "past_23", flightNumber: "AD 5024", airline: "AD", from: "REC", to: "GIG", date: "2023-10-07", depTime: "08:15", arrTime: "11:10", duration: 175, distance: 1862, status: "Completed" },
+  { id: "past_24", flightNumber: "", airline: "AD", from: "SLZ", to: "REC", date: "2023-10-07", depTime: "12:00", arrTime: "14:00", duration: 120, distance: 1202, status: "Completed", tailNumber: "PR-YRN" },
+  { id: "past_25", flightNumber: "AD 2723", airline: "AD", from: "REC", to: "SLZ", date: "2023-09-29", depTime: "12:55", arrTime: "14:55", duration: 120, distance: 1202, status: "Completed", aircraft: "A320", tailNumber: "PR-YSO" },
+  { id: "past_26", flightNumber: "AD 4078", airline: "AD", from: "REC", to: "VCP", date: "2023-09-29", depTime: "10:20", arrTime: "14:35", duration: 255, distance: 2108, status: "Completed", aircraft: "A21N", tailNumber: "PR-YJE" },
+  { id: "past_27", flightNumber: "AD 9213", airline: "AD", from: "GIG", to: "VCP", date: "2023-09-29", depTime: "13:00", arrTime: "14:15", duration: 75, distance: 399, status: "Completed", tailNumber: "PS-AEG" },
+  { id: "past_28", flightNumber: "", airline: "LA", from: "GRU", to: "SDU", date: "2023-09-19", depTime: "15:00", arrTime: "16:05", duration: 65, distance: 344, status: "Completed" },
+  { id: "past_29", flightNumber: "", airline: "LA", from: "AJU", to: "GRU", date: "2023-09-19", depTime: "10:00", arrTime: "12:45", duration: 165, distance: 1708, status: "Completed" },
+  { id: "past_30", flightNumber: "", airline: "LA", from: "GRU", to: "AJU", date: "2023-09-14", depTime: "14:00", arrTime: "16:45", duration: 165, distance: 1708, status: "Completed", aircraft: "A319" },
+  { id: "past_31", flightNumber: "", airline: "LA", from: "GIG", to: "GRU", date: "2023-09-14", depTime: "11:00", arrTime: "12:10", duration: 70, distance: 338, status: "Completed" },
+  { id: "past_32", flightNumber: "", airline: "LA", from: "GRU", to: "SDU", date: "2023-08-22", depTime: "14:30", arrTime: "15:35", duration: 65, distance: 344, status: "Completed", aircraft: "A319" },
+  { id: "past_33", flightNumber: "", airline: "SKU", from: "LIM", to: "GRU", date: "2023-08-22", depTime: "08:00", arrTime: "13:00", duration: 300, distance: 3478, status: "Completed" },
+  { id: "past_34", flightNumber: "", airline: "SKU", from: "CUZ", to: "LIM", date: "2023-08-20", depTime: "10:00", arrTime: "11:15", duration: 75, distance: 586, status: "Completed" },
+  { id: "past_35", flightNumber: "SKX 5007", airline: "SKU", from: "LIM", to: "CUZ", date: "2023-08-16", depTime: "14:00", arrTime: "15:15", duration: 75, distance: 586, status: "Completed", tailNumber: "CC-AZV" },
+  { id: "past_36", flightNumber: "", airline: "SKU", from: "GRU", to: "LIM", date: "2023-08-14", depTime: "17:00", arrTime: "22:00", duration: 300, distance: 3478, status: "Completed" },
+  { id: "past_37", flightNumber: "", airline: "LA", from: "GIG", to: "GRU", date: "2023-08-14", depTime: "11:00", arrTime: "12:10", duration: 70, distance: 338, status: "Completed", aircraft: "A319", tailNumber: "PR-XBI" },
+  { id: "past_38", flightNumber: "LA 3938", airline: "LA", from: "CGH", to: "SDU", date: "2023-07-26", depTime: "21:25", arrTime: "22:40", duration: 75, distance: 365, status: "Completed", aircraft: "A19N", tailNumber: "PR-TMA" },
+  { id: "past_39", flightNumber: "", airline: "LA", from: "VIX", to: "SDU", date: "2023-07-08", depTime: "10:00", arrTime: "11:10", duration: 70, distance: 420, status: "Completed", aircraft: "A319" },
+  { id: "past_40", flightNumber: "LA 3660", airline: "LA", from: "SDU", to: "VIX", date: "2023-07-06", depTime: "07:30", arrTime: "08:35", duration: 65, distance: 420, status: "Completed", aircraft: "A319" },
+  { id: "past_41", flightNumber: "G3 2041", airline: "G3", from: "BSB", to: "GIG", date: "2023-06-26", depTime: "14:00", arrTime: "15:40", duration: 100, distance: 916, status: "Completed", aircraft: "B73X" },
+  { id: "past_42", flightNumber: "", airline: "G3", from: "BEL", to: "BSB", date: "2023-06-26", depTime: "10:00", arrTime: "12:40", duration: 160, distance: 1614, status: "Completed", aircraft: "B738", tailNumber: "PR-GGM" },
+  { id: "past_43", flightNumber: "G3 1833", airline: "G3", from: "MCP", to: "BEL", date: "2023-06-23", depTime: "11:00", arrTime: "12:00", duration: 60, distance: 330, status: "Completed", aircraft: "B73X" },
+  { id: "past_44", flightNumber: "", airline: "G3", from: "BSB", to: "MCP", date: "2023-06-20", depTime: "13:00", arrTime: "15:40", duration: 160, distance: 1806, status: "Completed", aircraft: "B73X" },
+  { id: "past_45", flightNumber: "", airline: "G3", from: "BEL", to: "BSB", date: "2023-06-20", depTime: "08:00", arrTime: "10:40", duration: 160, distance: 1614, status: "Completed", aircraft: "B73X" },
+  { id: "past_46", flightNumber: "G3 2290", airline: "G3", from: "GIG", to: "BEL", date: "2023-06-15", depTime: "11:00", arrTime: "14:30", duration: 210, distance: 2451, status: "Completed", aircraft: "B38M", tailNumber: "PR-XMX" },
+  { id: "past_47", flightNumber: "", airline: "G3", from: "POA", to: "SDU", date: "2023-06-06", depTime: "10:00", arrTime: "11:45", duration: 105, distance: 1122, status: "Completed", aircraft: "B73X" },
+  { id: "past_48", flightNumber: "", airline: "LA", from: "GIG", to: "CXJ", date: "2023-06-01", depTime: "14:00", arrTime: "15:45", duration: 105, distance: 1065, status: "Completed", aircraft: "A320", tailNumber: "PR-XBD" },
+  { id: "past_49", flightNumber: "", airline: "G3", from: "SDU", to: "CNF", date: "2023-05-16", depTime: "11:00", arrTime: "12:10", duration: 70, distance: 375, status: "Completed", aircraft: "B73X" },
+  { id: "past_50", flightNumber: "", airline: "G3", from: "CNF", to: "SDU", date: "2023-04-23", depTime: "14:00", arrTime: "15:10", duration: 70, distance: 375, status: "Completed", aircraft: "B73X", tailNumber: "PR-GXN" },
+  { id: "past_51", flightNumber: "", airline: "G3", from: "SDU", to: "CNF", date: "2023-04-19", depTime: "08:00", arrTime: "09:10", duration: 70, distance: 375, status: "Completed", aircraft: "B73X", tailNumber: "PR-VBW", seat: "W" },
+  { id: "past_52", flightNumber: "EK 248", airline: "EK", from: "EZE", to: "GIG", date: "2023-02-05", depTime: "22:30", arrTime: "02:15", duration: 225, distance: 1997, status: "Completed", aircraft: "B77L", seat: "6K" },
+  { id: "past_53", flightNumber: "EK 248", airline: "EK", from: "EZE", to: "GIG", date: "2023-02-05", depTime: "22:25", arrTime: "01:10", duration: 225, distance: 1997, status: "Completed", aircraft: "B77W" },
+  { id: "past_54", flightNumber: "EK 247", airline: "EK", from: "GIG", to: "EZE", date: "2023-01-09", depTime: "18:30", arrTime: "20:55", duration: 205, distance: 1997, status: "Completed", aircraft: "B77L", seat: "W" },
+  { id: "past_55", flightNumber: "EK 247", airline: "EK", from: "GIG", to: "EZE", date: "2023-01-09", depTime: "17:25", arrTime: "20:50", duration: 205, distance: 1997, status: "Completed", aircraft: "B77W" },
+
+  // --- 2022 Past Flights (from screenshots) ---
+  { id: "past_56", flightNumber: "LA 3824", airline: "LA", from: "SDU", to: "CWB", date: "2022-04-22", depTime: "12:55", arrTime: "14:20", duration: 85, distance: 676, status: "Completed", aircraft: "A19N", seat: "W" },
+
+  // --- 2020 Past Flights (from screenshots) ---
+  { id: "past_57", flightNumber: "G3 1897", airline: "G3", from: "BEL", to: "BSB", date: "2020-11-15", depTime: "19:50", arrTime: "22:00", duration: 130, distance: 1614, status: "Completed", aircraft: "B38M" },
+  { id: "past_58", flightNumber: "", airline: "", from: "BSB", to: "SDU", date: "2020-11-15", depTime: "14:00", arrTime: "15:45", duration: 105, distance: 929, status: "Completed" },
+  { id: "past_59", flightNumber: "G3 1937", airline: "G3", from: "MAO", to: "BEL", date: "2020-11-15", depTime: "11:00", arrTime: "13:30", duration: 150, distance: 1300, status: "Completed" },
+
+  // --- 2019 Past Flights (from screenshots) ---
+  { id: "past_60", flightNumber: "", airline: "D8", from: "LGW", to: "GIG", date: "2019-10-28", depTime: "12:00", arrTime: "23:30", duration: 690, distance: 9247, status: "Completed" },
+  { id: "past_61", flightNumber: "D8 2899", airline: "D8", from: "CPH", to: "LGW", date: "2019-10-28", depTime: "10:00", arrTime: "11:45", duration: 105, distance: 985, status: "Completed", seat: "W" },
+  { id: "past_62", flightNumber: "SN 2259", airline: "SN", from: "BRU", to: "CPH", date: "2019-10-25", depTime: "15:55", arrTime: "17:30", duration: 95, distance: 755, status: "Completed", aircraft: "A320" },
+  { id: "past_63", flightNumber: "EK 379", airline: "EK", from: "HKT", to: "DXB", date: "2019-10-25", depTime: "19:20", arrTime: "23:00", duration: 400, distance: 4933, status: "Completed", aircraft: "B77W" },
+  { id: "past_64", flightNumber: "EK 183", airline: "EK", from: "DXB", to: "BRU", date: "2019-10-25", depTime: "08:30", arrTime: "12:45", duration: 435, distance: 5153, status: "Completed", aircraft: "B77W" },
+  { id: "past_65", flightNumber: "EK 370", airline: "EK", from: "DXB", to: "BKK", date: "2019-10-16", depTime: "08:55", arrTime: "18:05", duration: 370, distance: 4908, status: "Completed", aircraft: "B777" },
+  { id: "past_66", flightNumber: "EK 182", airline: "EK", from: "BRU", to: "DXB", date: "2019-10-14", depTime: "20:20", arrTime: "06:00", duration: 400, distance: 5153, status: "Completed", aircraft: "B77W" },
+  { id: "past_67", flightNumber: "G3 1086", airline: "G3", from: "GRU", to: "SDU", date: "2019-08-18", depTime: "18:25", arrTime: "19:25", duration: 60, distance: 344, status: "Completed", aircraft: "B738", tailNumber: "PR-GXT", seat: "W" },
+  { id: "past_68", flightNumber: "LA 8059", airline: "LA", from: "JNB", to: "GRU", date: "2019-08-16", depTime: "12:10", arrTime: "17:40", duration: 630, distance: 7448, status: "Completed", aircraft: "A359", tailNumber: "PR-XTI", seat: "W" },
+  { id: "past_69", flightNumber: "BA 6248", airline: "BA", from: "PLZ", to: "JNB", date: "2019-08-15", depTime: "08:25", arrTime: "10:00", duration: 95, distance: 911, status: "Completed", aircraft: "B733", tailNumber: "ZS-TGB" },
+  { id: "past_70", flightNumber: "FA 216", airline: "FA", from: "JNB", to: "CPT", date: "2019-08-06", depTime: "12:00", arrTime: "14:20", duration: 140, distance: 1273, status: "Completed", aircraft: "B734", tailNumber: "ZS-OAF" },
+  { id: "past_71", flightNumber: "LA 8058", airline: "LA", from: "GRU", to: "JNB", date: "2019-08-05", depTime: "17:55", arrTime: "07:24", duration: 509, distance: 7448, status: "Completed", aircraft: "A359", tailNumber: "PR-XTI", seat: "W" },
+  { id: "past_72", flightNumber: "G3 1083", airline: "G3", from: "SDU", to: "GRU", date: "2019-08-05", depTime: "11:45", arrTime: "12:55", duration: 70, distance: 344, status: "Completed", aircraft: "B738", tailNumber: "PR-GGW", seat: "W" },
+  { id: "past_73", flightNumber: "G3 2057", airline: "G3", from: "CNF", to: "SDU", date: "2019-05-02", depTime: "19:45", arrTime: "20:50", duration: 65, distance: 375, status: "Completed", aircraft: "B738" },
+  { id: "past_74", flightNumber: "G3 2052", airline: "G3", from: "SDU", to: "CNF", date: "2019-05-01", depTime: "08:30", arrTime: "09:30", duration: 60, distance: 375, status: "Completed", aircraft: "B738" },
+  { id: "past_75", flightNumber: "G3 2179", airline: "G3", from: "FOR", to: "GIG", date: "2019-04-14", depTime: "17:05", arrTime: "20:25", duration: 200, distance: 2179, status: "Completed", aircraft: "B738" },
+  { id: "past_76", flightNumber: "G3 2148", airline: "G3", from: "GIG", to: "FOR", date: "2019-04-11", depTime: "21:45", arrTime: "01:00", duration: 195, distance: 2179, status: "Completed", aircraft: "B738" },
+  { id: "past_77", flightNumber: "G3 2091", airline: "G3", from: "CWB", to: "SDU", date: "2019-02-10", depTime: "12:20", arrTime: "13:40", duration: 80, distance: 676, status: "Completed", aircraft: "B738" },
+  { id: "past_78", flightNumber: "G3 2088", airline: "G3", from: "SDU", to: "CWB", date: "2019-02-06", depTime: "07:25", arrTime: "08:50", duration: 85, distance: 676, status: "Completed", aircraft: "B737" },
+
+  // --- 2018 Past Flights (from screenshots) ---
+  { id: "past_79", flightNumber: "G3 2007", airline: "G3", from: "BEL", to: "GIG", date: "2018-11-05", depTime: "03:00", arrTime: "06:35", duration: 215, distance: 2451, status: "Completed", aircraft: "B738" },
+  { id: "past_80", flightNumber: "G3 2010", airline: "G3", from: "GIG", to: "BEL", date: "2018-11-01", depTime: "21:25", arrTime: "01:05", duration: 220, distance: 2451, status: "Completed", aircraft: "B738" },
+
+  // --- 2017 Past Flights (from screenshots) ---
+  { id: "past_81", flightNumber: "G3 2025", airline: "G3", from: "SSA", to: "GIG", date: "2017-08-29", depTime: "04:05", arrTime: "06:15", duration: 130, distance: 1220, status: "Completed", aircraft: "B738" },
+  { id: "past_82", flightNumber: "TP 0023", airline: "TP", from: "LIS", to: "SSA", date: "2017-08-28", depTime: "16:40", arrTime: "21:30", duration: 530, distance: 6505, status: "Completed" },
+  { id: "past_83", flightNumber: "TP 0663", airline: "TP", from: "AMS", to: "LIS", date: "2017-08-28", depTime: "13:40", arrTime: "15:40", duration: 180, distance: 1849, status: "Completed" },
+  { id: "past_84", flightNumber: "BT 619", airline: "BT", from: "RIX", to: "AMS", date: "2017-08-24", depTime: "16:30", arrTime: "17:50", duration: 140, distance: 1336, status: "Completed", aircraft: "BCS3" },
+  { id: "past_85", flightNumber: "BT 449", airline: "BT", from: "LED", to: "RIX", date: "2017-08-24", depTime: "14:25", arrTime: "15:45", duration: 80, distance: 486, status: "Completed", aircraft: "DH8D" },
+  { id: "past_86", flightNumber: "BT 422", airline: "BT", from: "RIX", to: "SVO", date: "2017-08-18", depTime: "18:25", arrTime: "19:55", duration: 90, distance: 832, status: "Completed", aircraft: "BCS3" },
+  { id: "past_87", flightNumber: "BT 480", airline: "BT", from: "PRG", to: "RIX", date: "2017-08-18", depTime: "08:45", arrTime: "11:50", duration: 125, distance: 993, status: "Completed", aircraft: "DH8D", seat: "W" },
+  { id: "past_88", flightNumber: "W6 2340", airline: "W6", from: "FCO", to: "BUD", date: "2017-08-11", depTime: "14:15", arrTime: "16:05", duration: 110, distance: 838, status: "Completed" },
+  { id: "past_89", flightNumber: "TP 806", airline: "TP", from: "LIS", to: "MXP", date: "2017-08-01", depTime: "09:05", arrTime: "11:45", duration: 160, distance: 1653, status: "Completed" },
+  { id: "past_90", flightNumber: "TP 70", airline: "TP", from: "GIG", to: "LIS", date: "2017-07-30", depTime: "21:10", arrTime: "10:55", duration: 525, distance: 7723, status: "Completed", aircraft: "A332" }
 ];
 
 // Upcoming flights pre-loaded from screenshots
-// Departs relative to May 22, 2026 local time
+// Departs relative to June 23, 2026 local time
 window.UPCOMING_FLIGHTS = [
-  {
-    id: "up_1",
-    flightNumber: "AD 6053",
-    airline: "AD",
-    from: "SDU",
-    to: "CGH",
-    date: "2026-05-28", // +6 days from May 22
-    depTime: "09:05",
-    arrTime: "10:15",
-    duration: 70, // 1h 10m
-    distance: 366,
-    status: "Scheduled",
-    gate: "4A",
-    terminal: "1",
-    aircraft: "A320neo",
-    tailNumber: "PR-YRQ",
-    inboundFlight: {
-      flightNumber: "AD 6052",
-      status: "On Time",
-      origin: "VCP",
-      eta: "08:15"
-    },
-    alerts: [
-      { type: "gate", text: "Portão definido para 4A no Aeroporto Santos Dumont." },
-      { type: "weather", text: "Previsão de chuva fraca em São Paulo no horário de pouso." }
-    ]
-  },
-  {
-    id: "up_2",
-    flightNumber: "AD 6068",
-    airline: "AD",
-    from: "CGH",
-    to: "SDU",
-    date: "2026-06-02", // +11 days from May 22
-    depTime: "13:55",
-    arrTime: "14:55",
-    duration: 60, // 1h 00m
-    distance: 366,
-    status: "Scheduled",
-    gate: "12",
-    terminal: "M",
-    aircraft: "E195-E2",
-    tailNumber: "PR-YVA",
-    inboundFlight: {
-      flightNumber: "AD 6067",
-      status: "Delayed",
-      origin: "CNF",
-      eta: "13:10"
-    },
-    alerts: [
-      { type: "delay", text: "Alerta Pro: Aeronave chegando de CNF com 15 min de atraso acumulado." }
-    ]
-  },
-  {
-    id: "up_3",
-    flightNumber: "G3 2006",
-    airline: "G3",
-    from: "GIG",
-    to: "BEL",
-    date: "2026-06-11", // +20 days from May 22
-    depTime: "08:30",
-    arrTime: "12:00",
-    duration: 210, // 3h 30m
-    distance: 2450,
-    status: "Scheduled",
-    gate: "B22",
-    terminal: "2",
-    aircraft: "B737-MAX8",
-    tailNumber: "PR-XMZ",
-    inboundFlight: null,
-    alerts: []
-  }
+  { id: "up_1", flightNumber: "LA 3231", airline: "LA", from: "BEL", to: "GRU", date: "2026-06-30", depTime: "11:40", arrTime: "15:20", duration: 220, distance: 2465, status: "Scheduled" },
+  { id: "up_2", flightNumber: "LA 3204", airline: "LA", from: "GRU", to: "IGU", date: "2026-06-30", depTime: "17:10", arrTime: "18:55", duration: 105, distance: 835, status: "Scheduled" },
+  { id: "up_3", flightNumber: "G3 1867", airline: "G3", from: "IGU", to: "GIG", date: "2026-07-08", depTime: "20:20", arrTime: "22:15", duration: 115, distance: 1175, status: "Scheduled" },
+  { id: "up_4", flightNumber: "AD 4500", airline: "AD", from: "CNF", to: "BEL", date: "2026-07-21", depTime: "21:45", arrTime: "00:50", duration: 185, distance: 2108, status: "Scheduled" },
+  { id: "up_5", flightNumber: "AD 4439", airline: "AD", from: "BEL", to: "CNF", date: "2026-08-05", depTime: "02:00", arrTime: "05:05", duration: 185, distance: 2108, status: "Scheduled" },
+  { id: "up_6", flightNumber: "AD 2948", airline: "AD", from: "CNF", to: "SDU", date: "2026-08-05", depTime: "08:15", arrTime: "09:20", duration: 65, distance: 366, status: "Scheduled" },
+  { id: "up_7", flightNumber: "G3 1476", airline: "G3", from: "GRU", to: "CGR", date: "2026-09-02", depTime: "09:05", arrTime: "09:55", duration: 50, distance: 890, status: "Scheduled" },
+  { id: "up_8", flightNumber: "G3 1479", airline: "G3", from: "CGR", to: "GRU", date: "2026-09-06", depTime: "18:35", arrTime: "21:20", duration: 165, distance: 890, status: "Scheduled" },
+  { id: "up_9", flightNumber: "AD 6409", airline: "AD", from: "SDU", to: "CGH", date: "2026-09-16", depTime: "11:40", arrTime: "12:45", duration: 65, distance: 366, status: "Scheduled" },
+  { id: "up_10", flightNumber: "AD 4070", airline: "AD", from: "VCP", to: "BEL", date: "2026-09-28", depTime: "12:50", arrTime: "16:15", duration: 205, distance: 2450, status: "Scheduled" }
 ];
-

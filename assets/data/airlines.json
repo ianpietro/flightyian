@@ -1,0 +1,642 @@
+[
+  {
+    "iata": "AC",
+    "name_en": "Air Canada",
+    "name_zh": "加拿大航空"
+  },
+  {
+    "iata": "3U",
+    "name_en": "Sichuan Airlines",
+    "name_zh": "四川航空"
+  },
+  {
+    "iata": "5J",
+    "name_en": "Cebu Pacific",
+    "name_zh": "宿务太平洋航空"
+  },
+  {
+    "iata": "6E",
+    "name_en": "IndiGo",
+    "name_zh": "靛蓝航空"
+  },
+  {
+    "iata": "8L",
+    "name_en": "Lucky Air",
+    "name_zh": "祥鹏航空"
+  },
+  {
+    "iata": "9C",
+    "name_en": "Spring Airlines",
+    "name_zh": "春秋航空"
+  },
+  {
+    "iata": "A3",
+    "name_en": "Aegean Airlines",
+    "name_zh": "爱琴海航空"
+  },
+  {
+    "iata": "AA",
+    "name_en": "American Airlines",
+    "name_zh": "美国航空"
+  },
+  {
+    "iata": "AD",
+    "name_en": "Azul Brazilian Airlines",
+    "name_zh": "蓝色巴西航空"
+  },
+  {
+    "iata": "AF",
+    "name_en": "Air France",
+    "name_zh": "法国航空"
+  },
+  {
+    "iata": "AI",
+    "name_en": "Air India",
+    "name_zh": "印度航空"
+  },
+  {
+    "iata": "AM",
+    "name_en": "Aeromexico",
+    "name_zh": "墨西哥国际航空"
+  },
+  {
+    "iata": "AR",
+    "name_en": "Aerolíneas Argentinas",
+    "name_zh": "阿根廷航空"
+  },
+  {
+    "iata": "AT",
+    "name_en": "Royal Air Maroc",
+    "name_zh": "摩洛哥皇家航空"
+  },
+  {
+    "iata": "AV",
+    "name_en": "Avianca",
+    "name_zh": "哥伦比亚航空"
+  },
+  {
+    "iata": "AY",
+    "name_en": "Finnair",
+    "name_zh": "芬兰航空"
+  },
+  {
+    "iata": "AZ",
+    "name_en": "ITA Airways",
+    "name_zh": "意大利航空"
+  },
+  {
+    "iata": "BA",
+    "name_en": "British Airways",
+    "name_zh": "英国航空"
+  },
+  {
+    "iata": "BG",
+    "name_en": "Biman Bangladesh Airlines",
+    "name_zh": "孟加拉航空"
+  },
+  {
+    "iata": "CA",
+    "name_en": "Air China",
+    "name_zh": "中国国际航空"
+  },
+  {
+    "iata": "CI",
+    "name_en": "China Airlines",
+    "name_zh": "中华航空"
+  },
+  {
+    "iata": "CM",
+    "name_en": "Copa Airlines",
+    "name_zh": "巴拿马航空"
+  },
+  {
+    "iata": "CX",
+    "name_en": "Cathay Pacific",
+    "name_zh": "国泰航空"
+  },
+  {
+    "iata": "CZ",
+    "name_en": "China Southern Airlines",
+    "name_zh": "中国南方航空"
+  },
+  {
+    "iata": "D7",
+    "name_en": "AirAsia X",
+    "name_zh": "全亚洲航空"
+  },
+  {
+    "iata": "DL",
+    "name_en": "Delta Air Lines",
+    "name_zh": "达美航空"
+  },
+  {
+    "iata": "DY",
+    "name_en": "Norwegian Air Shuttle",
+    "name_zh": "挪威穿梭航空"
+  },
+  {
+    "iata": "DZ",
+    "name_en": "Donghai Airlines",
+    "name_zh": "东海航空"
+  },
+  {
+    "iata": "EI",
+    "name_en": "Aer Lingus",
+    "name_zh": "爱尔兰航空"
+  },
+  {
+    "iata": "EK",
+    "name_en": "Emirates",
+    "name_zh": "阿联酋航空"
+  },
+  {
+    "iata": "ET",
+    "name_en": "Ethiopian Airlines",
+    "name_zh": "埃塞俄比亚航空"
+  },
+  {
+    "iata": "EU",
+    "name_en": "Chengdu Airlines",
+    "name_zh": "成都航空"
+  },
+  {
+    "iata": "EW",
+    "name_en": "Eurowings",
+    "name_zh": "欧洲之翼航空"
+  },
+  {
+    "iata": "EY",
+    "name_en": "Etihad Airways",
+    "name_zh": "阿提哈德航空"
+  },
+  {
+    "iata": "F9",
+    "name_en": "Frontier Airlines",
+    "name_zh": "边疆航空"
+  },
+  {
+    "iata": "FD",
+    "name_en": "Thai AirAsia",
+    "name_zh": "泰国亚洲航空"
+  },
+  {
+    "iata": "FI",
+    "name_en": "Icelandair",
+    "name_zh": "冰岛航空"
+  },
+  {
+    "iata": "FJ",
+    "name_en": "Fiji Airways",
+    "name_zh": "斐济航空"
+  },
+  {
+    "iata": "FM",
+    "name_en": "Shanghai Airlines",
+    "name_zh": "上海航空"
+  },
+  {
+    "iata": "FR",
+    "name_en": "Ryanair",
+    "name_zh": "瑞安航空"
+  },
+  {
+    "iata": "FU",
+    "name_en": "Fuzhou Airlines",
+    "name_zh": "福州航空"
+  },
+  {
+    "iata": "G4",
+    "name_en": "Allegiant Air",
+    "name_zh": "忠实航空"
+  },
+  {
+    "iata": "G5",
+    "name_en": "China Express Airlines",
+    "name_zh": "华夏航空"
+  },
+  {
+    "iata": "G9",
+    "name_en": "Air Arabia",
+    "name_zh": "阿拉伯航空"
+  },
+  {
+    "iata": "GA",
+    "name_en": "Garuda Indonesia",
+    "name_zh": "印度尼西亚鹰航空"
+  },
+  {
+    "iata": "GE",
+    "name_en": "TransAsia Airways",
+    "name_zh": "复兴航空"
+  },
+  {
+    "iata": "GJ",
+    "name_en": "Loong Air",
+    "name_zh": "长龙航空"
+  },
+  {
+    "iata": "GS",
+    "name_en": "Tianjin Airlines",
+    "name_zh": "天津航空"
+  },
+  {
+    "iata": "HA",
+    "name_en": "Hawaiian Airlines",
+    "name_zh": "夏威夷航空"
+  },
+  {
+    "iata": "HO",
+    "name_en": "Juneyao Air",
+    "name_zh": "吉祥航空"
+  },
+  {
+    "iata": "HU",
+    "name_en": "Hainan Airlines",
+    "name_zh": "海南航空"
+  },
+  {
+    "iata": "HX",
+    "name_en": "Hong Kong Airlines",
+    "name_zh": "香港航空"
+  },
+  {
+    "iata": "IJ",
+    "name_en": "Spring Japan",
+    "name_zh": "春秋航空日本"
+  },
+  {
+    "iata": "JD",
+    "name_en": "Capital Airlines",
+    "name_zh": "首都航空"
+  },
+  {
+    "iata": "JL",
+    "name_en": "Japan Airlines",
+    "name_zh": "日本航空"
+  },
+  {
+    "iata": "JQ",
+    "name_en": "Jetstar",
+    "name_zh": "捷星航空"
+  },
+  {
+    "iata": "JT",
+    "name_en": "Lion Air",
+    "name_zh": "狮子航空"
+  },
+  {
+    "iata": "KA",
+    "name_en": "Cathay Dragon",
+    "name_zh": "港龙航空"
+  },
+  {
+    "iata": "KC",
+    "name_en": "Air Astana",
+    "name_zh": "阿斯塔纳航空"
+  },
+  {
+    "iata": "KE",
+    "name_en": "Korean Air",
+    "name_zh": "大韩航空"
+  },
+  {
+    "iata": "KL",
+    "name_en": "KLM",
+    "name_zh": "荷兰皇家航空"
+  },
+  {
+    "iata": "KN",
+    "name_en": "China United Airlines",
+    "name_zh": "中国联合航空"
+  },
+  {
+    "iata": "KQ",
+    "name_en": "Kenya Airways",
+    "name_zh": "肯尼亚航空"
+  },
+  {
+    "iata": "KU",
+    "name_en": "Kuwait Airways",
+    "name_zh": "科威特航空"
+  },
+  {
+    "iata": "KY",
+    "name_en": "Kunming Airlines",
+    "name_zh": "昆明航空"
+  },
+  {
+    "iata": "LA",
+    "name_en": "LATAM Airlines",
+    "name_zh": "南美航空"
+  },
+  {
+    "iata": "LH",
+    "name_en": "Lufthansa",
+    "name_zh": "汉莎航空"
+  },
+  {
+    "iata": "LO",
+    "name_en": "LOT Polish Airlines",
+    "name_zh": "波兰航空"
+  },
+  {
+    "iata": "LS",
+    "name_en": "Jet2.com",
+    "name_zh": "捷特二航空"
+  },
+  {
+    "iata": "LX",
+    "name_en": "Swiss International Air Lines",
+    "name_zh": "瑞士国际航空"
+  },
+  {
+    "iata": "MD",
+    "name_en": "Air Madagascar",
+    "name_zh": "马达加斯加航空"
+  },
+  {
+    "iata": "MF",
+    "name_en": "Xiamen Air",
+    "name_zh": "厦门航空"
+  },
+  {
+    "iata": "MH",
+    "name_en": "Malaysia Airlines",
+    "name_zh": "马来西亚航空"
+  },
+  {
+    "iata": "MI",
+    "name_en": "SilkAir",
+    "name_zh": "胜安航空"
+  },
+  {
+    "iata": "MK",
+    "name_en": "Air Mauritius",
+    "name_zh": "毛里求斯航空"
+  },
+  {
+    "iata": "MM",
+    "name_en": "Peach Aviation",
+    "name_zh": "乐桃航空"
+  },
+  {
+    "iata": "MS",
+    "name_en": "EgyptAir",
+    "name_zh": "埃及航空"
+  },
+  {
+    "iata": "MU",
+    "name_en": "China Eastern Airlines",
+    "name_zh": "中国东方航空"
+  },
+  {
+    "iata": "NH",
+    "name_en": "All Nippon Airways (ANA)",
+    "name_zh": "全日空航空"
+  },
+  {
+    "iata": "NK",
+    "name_en": "Spirit Airlines",
+    "name_zh": "精神航空"
+  },
+  {
+    "iata": "NS",
+    "name_en": "Hebei Airlines",
+    "name_zh": "河北航空"
+  },
+  {
+    "iata": "NX",
+    "name_en": "Air Macau",
+    "name_zh": "澳门航空"
+  },
+  {
+    "iata": "NZ",
+    "name_en": "Air New Zealand",
+    "name_zh": "新西兰航空"
+  },
+  {
+    "iata": "OB",
+    "name_en": "Boliviana de Aviación",
+    "name_zh": "玻利维亚航空"
+  },
+  {
+    "iata": "OS",
+    "name_en": "Austrian Airlines",
+    "name_zh": "奥地利航空"
+  },
+  {
+    "iata": "OZ",
+    "name_en": "Asiana Airlines",
+    "name_zh": "韩亚航空"
+  },
+  {
+    "iata": "PG",
+    "name_en": "Bangkok Airways",
+    "name_zh": "曼谷航空"
+  },
+  {
+    "iata": "PR",
+    "name_en": "Philippine Airlines",
+    "name_zh": "菲律宾航空"
+  },
+  {
+    "iata": "QF",
+    "name_en": "Qantas",
+    "name_zh": "澳洲航空"
+  },
+  {
+    "iata": "QR",
+    "name_en": "Qatar Airways",
+    "name_zh": "卡塔尔航空"
+  },
+  {
+    "iata": "QW",
+    "name_en": "Qingdao Airlines",
+    "name_zh": "青岛航空"
+  },
+  {
+    "iata": "RJ",
+    "name_en": "Royal Jordanian",
+    "name_zh": "约旦皇家航空"
+  },
+  {
+    "iata": "RY",
+    "name_en": "Ryanair UK",
+    "name_zh": "瑞安航空 (英国)"
+  },
+  {
+    "iata": "SA",
+    "name_en": "South African Airways",
+    "name_zh": "南非航空"
+  },
+  {
+    "iata": "SC",
+    "name_en": "Shandong Airlines",
+    "name_zh": "山东航空"
+  },
+  {
+    "iata": "SK",
+    "name_en": "SAS Scandinavian Airlines",
+    "name_zh": "斯堪的纳维亚航空"
+  },
+  {
+    "iata": "SN",
+    "name_en": "Brussels Airlines",
+    "name_zh": "布鲁塞尔航空"
+  },
+  {
+    "iata": "SQ",
+    "name_en": "Singapore Airlines",
+    "name_zh": "新加坡航空"
+  },
+  {
+    "iata": "SU",
+    "name_en": "Aeroflot",
+    "name_zh": "俄罗斯航空"
+  },
+  {
+    "iata": "SV",
+    "name_en": "Saudia",
+    "name_zh": "沙特阿拉伯航空"
+  },
+  {
+    "iata": "TC",
+    "name_en": "Air Tanzania",
+    "name_zh": "坦桑尼亚航空"
+  },
+  {
+    "iata": "TG",
+    "name_en": "Thai Airways",
+    "name_zh": "泰国国际航空"
+  },
+  {
+    "iata": "TK",
+    "name_en": "Turkish Airlines",
+    "name_zh": "土耳其航空"
+  },
+  {
+    "iata": "TN",
+    "name_en": "Air Tahiti Nui",
+    "name_zh": "塔希提航空"
+  },
+  {
+    "iata": "TP",
+    "name_en": "TAP Air Portugal",
+    "name_zh": "葡萄牙航空"
+  },
+  {
+    "iata": "TR",
+    "name_en": "Scoot",
+    "name_zh": "酷航"
+  },
+  {
+    "iata": "TU",
+    "name_en": "Tunisair",
+    "name_zh": "突尼斯航空"
+  },
+  {
+    "iata": "TV",
+    "name_en": "Tibet Airlines",
+    "name_zh": "西藏航空"
+  },
+  {
+    "iata": "U2",
+    "name_en": "easyJet",
+    "name_zh": "易捷航空"
+  },
+  {
+    "iata": "U6",
+    "name_en": "Ural Airlines",
+    "name_zh": "乌拉尔航空"
+  },
+  {
+    "iata": "UA",
+    "name_en": "United Airlines",
+    "name_zh": "联合航空"
+  },
+  {
+    "iata": "UL",
+    "name_en": "SriLankan Airlines",
+    "name_zh": "斯里兰卡航空"
+  },
+  {
+    "iata": "UX",
+    "name_en": "Air Europa",
+    "name_zh": "欧罗巴航空"
+  },
+  {
+    "iata": "VA",
+    "name_en": "Virgin Australia",
+    "name_zh": "维珍澳洲航空"
+  },
+  {
+    "iata": "VJ",
+    "name_en": "VietJet Air",
+    "name_zh": "越捷航空"
+  },
+  {
+    "iata": "VN",
+    "name_en": "Vietnam Airlines",
+    "name_zh": "越南航空"
+  },
+  {
+    "iata": "WB",
+    "name_en": "RwandAir",
+    "name_zh": "卢旺达航空"
+  },
+  {
+    "iata": "WN",
+    "name_en": "Southwest Airlines",
+    "name_zh": "西南航空"
+  },
+  {
+    "iata": "WS",
+    "name_en": "WestJet",
+    "name_zh": "西捷航空"
+  },
+  {
+    "iata": "WW",
+    "name_en": "WOW air",
+    "name_zh": "沃奥航空"
+  },
+  {
+    "iata": "WY",
+    "name_en": "Oman Air",
+    "name_zh": "阿曼航空"
+  },
+  {
+    "iata": "XC",
+    "name_en": "Corendon Airlines",
+    "name_zh": "核心航空"
+  },
+  {
+    "iata": "XJ",
+    "name_en": "Thai AirAsia X",
+    "name_zh": "泰国全亚洲航空"
+  },
+  {
+    "iata": "XW",
+    "name_en": "NokScoot",
+    "name_zh": "酷鸟航空"
+  },
+  {
+    "iata": "Y4",
+    "name_en": "Volaris",
+    "name_zh": "沃拉里斯航空"
+  },
+  {
+    "iata": "ZB",
+    "name_en": "Monarch Airlines",
+    "name_zh": "君主航空"
+  },
+  {
+    "iata": "ZH",
+    "name_en": "Shenzhen Airlines",
+    "name_zh": "深圳航空"
+  },
+  {
+    "iata": "ZL",
+    "name_en": "Regional Express (Rex)",
+    "name_zh": "区域快线航空"
+  }
+]

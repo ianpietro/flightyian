@@ -1,39 +1,39 @@
 /* Flighty IAN - Premium Style Sheets */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* ── Flighty IAN · Cockpit Dark Palette ───────────────────────
-     Inspirado em: instrumentos de vidro de aeronave, HUD noturno
-     e painéis de cockpit de aviação premium. Foge completamente
-     do azul/roxo padrão de IA. ─────────────────────────────── */
+  /* ── Flighty IAN · Premium Light iOS Theme ────────────────────
+     Inspirado no visual limpo, moderno e de alto contraste do Flighty.
+     ─────────────────────────────────────────────────────────── */
 
-  --bg-color: #0b0f13;                          /* Slate quase-preto — como cabine às 2h da manhã */
-  --card-bg: rgba(16, 22, 28, 0.78);            /* Vidro fosco sobre escuro */
-  --card-border: rgba(255, 200, 100, 0.07);     /* Borda levemente âmbar — reflexo de painel */
+  --bg-color: #ffffff;                          /* Fundo branco iOS */
+  --card-bg: #ffffff;                            /* Fundo dos painéis e cards */
+  --card-border: rgba(0, 0, 0, 0.06);           /* Divisores cinzas finos */
 
-  --text-primary: #e8e0d0;                       /* Branco-marfim quente — não é branco puro */
-  --text-secondary: #8a8880;                     /* Cinza-cobre apagado */
-  --text-muted: #52504c;                         /* Quase invisível — texto terciário */
+  --text-primary: #000000;                       /* Preto puro para contraste máximo */
+  --text-secondary: #6e7c8c;                     /* Cinza azulado das labels do Flighty */
+  --text-muted: #b0bac5;                         /* Cinza claro para elementos secundários */
 
-  /* Âmbar aeronáutico — a cor dominante do app */
-  --accent-pro: #e8a020;
-  --accent-pro-gradient: linear-gradient(135deg, #f0b830, #c07010);
+  /* Azul clássico do Flighty / iOS */
+  --accent-pro: #007aff;
+  --accent-pro-gradient: linear-gradient(135deg, #007aff, #0051ba);
 
-  /* Teal de radar — substitui azul iOS */
-  --info-blue: #1ab8a0;
+  /* Teal/Blue de Radar */
+  --info-blue: #007aff;
 
-  /* Dourado vivo para voos passados */
-  --accent-gold: #f0b830;
+  /* Âmbar clássico */
+  --accent-gold: #ff9500;
 
-  /* Vermelho-coral para avisos */
-  --warning-red: #e05040;
-  --warning-bg: rgba(224, 80, 64, 0.12);
+  /* Vermelho iOS */
+  --warning-red: #ff3b30;
+  --warning-bg: rgba(255, 59, 48, 0.08);
 
-  /* Verde radar para status ok */
-  --success-green: #28c880;
+  /* Verde iOS */
+  --success-green: #34c759;
 
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-passport: 'Open Sans', sans-serif;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
 }
 
@@ -150,10 +150,10 @@ body {
   width: 440px;
   height: calc(100vh - 40px);
   max-height: 920px;
-  background-color: var(--bg-color);
-  border: 4px solid var(--card-border);
-  border-radius: 48px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background-color: #ffffff;
+  border: 10px solid #000000; /* iPhone-style black bezel frame */
+  border-radius: 54px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -268,22 +268,32 @@ body {
 }
 
 /* Floating Bottom Navigation Bar */
-.bottom-nav-bar {
+.bottom-nav-container {
   position: absolute;
   bottom: var(--safe-bottom);
   left: 20px;
   right: 20px;
-  height: 72px;
-  background: rgba(22, 22, 26, 0.85);
-  border: 1px solid var(--card-border);
-  backdrop-filter: blur(30px);
-  border-radius: 36px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.bottom-nav-bar {
+  position: static !important;
+  flex: 1;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
-  z-index: 100;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  padding: 0 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .nav-item {
@@ -295,10 +305,10 @@ body {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s, transform 0.15s;
-  height: 100%;
+  transition: all 0.2s;
+  height: calc(100% - 12px);
   border-radius: 20px;
 }
 
@@ -307,17 +317,42 @@ body {
 }
 
 .nav-icon {
-  font-size: 20px;
-  margin-bottom: 4px;
+  font-size: 18px;
+  margin-bottom: 2px;
   transition: transform 0.2s;
 }
 
 .nav-item.active {
-  color: var(--info-blue);
+  color: var(--accent-pro);
+  background: rgba(0, 122, 255, 0.08); /* light blue iOS active overlay */
 }
 
-.nav-item.active .nav-icon {
-  transform: translateY(-2px);
+.nav-search-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: transform 0.15s, background-color 0.15s;
+}
+.nav-search-btn:active {
+  transform: scale(0.95);
+  background-color: #f8f9fa;
+}
+.nav-search-btn.active {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.15);
+}
+.nav-search-btn.active span {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 4px rgba(0, 122, 255, 0.2));
 }
 
 /* Golden Pro Badges */
@@ -746,9 +781,12 @@ body {
 }
 
 .past-airline-col {
-  width: 65px;
+  width: 95px;
   font-weight: 700;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .past-route-col {
@@ -1104,6 +1142,29 @@ body {
   line-height: 1.4;
 }
 
+/* General Map Only Active Overrides (Applies to Desktop and Mobile) */
+body.map-only-active .phone-wrapper {
+  background-color: transparent !important;
+  pointer-events: none !important;
+}
+
+body.map-only-active .main-content-sheet {
+  transform: translateY(calc(100% - 84px)) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+
+body.map-only-active .bottom-nav-container {
+  pointer-events: auto !important;
+}
+
+body.map-only-active .map-floating-capsule {
+  pointer-events: auto !important;
+}
+
 /* Responsive Adaptive Engine overrides */
 @media (max-width: 768px) {
   body {
@@ -1274,18 +1335,41 @@ body {
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s, backdrop-filter 0.4s;
 }
 
-/* ================= PHYSICAL PASSPORT BOOKLET ================= */
+/* ================= PHYSICAL PASSPORT BOOKLET & FOLDER ================= */
+.passport-folder {
+  background-color: #0b2152; /* default Navy Blue */
+  padding: 12px;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transition: background-color 0.4s ease;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Leather grain effect using CSS gradients */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0),
+                    radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 0);
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
+}
+
+.passport-folder.theme-blue { background-color: #0b2152 !important; }
+.passport-folder.theme-red { background-color: #6b121a !important; }
+.passport-folder.theme-green { background-color: #0e3e2b !important; }
+.passport-folder.theme-black { background-color: #1a1c1e !important; }
+.passport-folder.theme-azure { background-color: #2a6b8f !important; }
+
 .passport-booklet {
   background: radial-gradient(circle, #fcfbfa 20%, #f4f2e8 100%);
-  border: 5px solid #082e1e; /* Deep green border */
-  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08); /* Page border inside the folder */
+  border-radius: 16px;
   padding: 16px;
-  color: #1a2c22; /* Dark green/grey text */
-  box-shadow: inset 0 0 12px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.5);
+  color: #1a2c22;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.15);
   position: relative;
   overflow: hidden;
-  margin-bottom: 20px;
-  flex-shrink: 0; /* Prevent flex shrink in scrollable tab panels */
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .passport-flags-row {
@@ -1580,4 +1664,1324 @@ body {
   opacity: 0.9;
 }
 
+/* ================= SPARK SPLASH SCREEN ================= */
+#splash-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #080b0e;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+#splash-screen.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+.splash-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.splash-logo {
+  font-size: 64px;
+  animation: splashPulse 2s ease-in-out infinite;
+}
+.splash-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.splash-loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid var(--accent-pro);
+  border-radius: 50%;
+  animation: spin-loader 1s linear infinite;
+}
+@keyframes splashPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(232, 160, 32, 0.2)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 25px rgba(232, 160, 32, 0.6)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(232, 160, 32, 0.2)); }
+}
+
+/* ================= PASSPORT CAPA E CORES ================= */
+.passport-customizer-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.customizer-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+.color-swatches-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  align-items: center;
+}
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  position: relative;
+}
+.color-swatch.active {
+  border-color: #fff;
+  transform: scale(1.15);
+}
+.color-swatch.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+}
+.guilloche-selector-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.guilloche-option {
+  background: rgba(255,255,255,0.02);
+  border: 1.5px dashed var(--card-border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.guilloche-option.active {
+  border-style: solid;
+  border-color: var(--accent-pro);
+  color: var(--text-primary);
+  background: rgba(232, 160, 32, 0.05);
+}
+
+/* ================= PHYSICAL PASSPORT RETINA OVERRIDES ================= */
+.passport-booklet {
+  font-family: var(--font-passport) !important;
+  transition: border-color 0.3s, background-image 0.3s;
+}
+/* Hologram Overlay */
+.passport-hologram-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 6;
+  mix-blend-mode: color-dodge;
+  opacity: 0.16;
+  background: linear-gradient(135deg, 
+    rgba(255, 0, 128, 0.25) 0%,
+    rgba(0, 255, 255, 0.25) 20%,
+    rgba(255, 255, 0, 0.25) 40%,
+    rgba(0, 255, 128, 0.25) 60%,
+    rgba(0, 128, 255, 0.25) 80%,
+    rgba(255, 0, 128, 0.25) 100%
+  );
+  background-size: 400% 400%;
+  animation: hologramShift 16s ease infinite;
+}
+.passport-booklet::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(105deg, 
+    rgba(255,255,255,0) 30%, 
+    rgba(255,255,255,0.12) 45%, 
+    rgba(255,255,255,0.25) 50%, 
+    rgba(255,255,255,0.12) 55%, 
+    rgba(255,255,255,0) 70%
+  );
+  background-size: 200% 100%;
+  background-position: -200% 0;
+  transition: background-position 0.9s ease;
+}
+.passport-booklet:hover::before {
+  background-position: 200% 0;
+}
+@keyframes hologramShift {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
+}
+
+/* Themes colors */
+.passport-booklet.theme-blue { border-color: #0b2152 !important; --pass-accent: #0b2152; }
+.passport-booklet.theme-red { border-color: #6b121a !important; --pass-accent: #6b121a; }
+.passport-booklet.theme-green { border-color: #0e3e2b !important; --pass-accent: #0e3e2b; }
+.passport-booklet.theme-black { border-color: #1a1c1e !important; --pass-accent: #1a1c1e; }
+.passport-booklet.theme-azure { border-color: #2a6b8f !important; --pass-accent: #2a6b8f; }
+
+.passport-booklet.theme-blue .passport-country-title { color: #0b2152 !important; }
+.passport-booklet.theme-red .passport-country-title { color: #6b121a !important; }
+.passport-booklet.theme-green .passport-country-title { color: #0e3e2b !important; }
+.passport-booklet.theme-black .passport-country-title { color: #1a1c1e !important; }
+.passport-booklet.theme-azure .passport-country-title { color: #2a6b8f !important; }
+
+/* Visited country flags / logos */
+.passport-airline-logos img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #f4f2e8;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.flag-img-icon {
+  width: 22px;
+  height: 15px;
+  border-radius: 2px;
+  object-fit: cover;
+  vertical-align: middle;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+#passport-flags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+/* ================= VISA STAMPS SECTOR ================= */
+.visa-stamps-section {
+  margin-top: 24px;
+}
+.visa-stamps-header {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.visa-stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--card-border);
+  border-radius: 20px;
+  padding: 16px;
+}
+.visa-stamp {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 800;
+  font-size: 9px;
+  text-align: center;
+  position: relative;
+  user-select: none;
+  transition: transform 0.2s;
+  cursor: default;
+}
+.visa-stamp:hover {
+  transform: scale(1.05) rotate(0deg) !important;
+}
+/* Random rotation & colors simulated via attributes */
+.visa-stamp.stamp-blue {
+  border: 2px dashed rgba(26, 115, 232, 0.65);
+  color: rgba(26, 115, 232, 0.7);
+  background: rgba(26, 115, 232, 0.02);
+}
+.visa-stamp.stamp-red {
+  border: 2px dashed rgba(224, 80, 64, 0.65);
+  color: rgba(224, 80, 64, 0.7);
+  background: rgba(224, 80, 64, 0.02);
+}
+.visa-stamp.stamp-green {
+  border: 2px dashed rgba(40, 200, 128, 0.65);
+  color: rgba(40, 200, 128, 0.7);
+  background: rgba(40, 200, 128, 0.02);
+}
+.visa-stamp.stamp-purple {
+  border: 2px dashed rgba(184, 124, 248, 0.65);
+  color: rgba(184, 124, 248, 0.7);
+  background: rgba(184, 124, 248, 0.02);
+}
+.visa-stamp-date {
+  font-size: 7px;
+  margin-top: 1px;
+}
+
+/* ================= MAP CONTROLS & ANIMATION ================= */
+.map-route-style-toggle {
+  display: flex;
+  background: rgba(30, 30, 35, 0.6);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 2px;
+  margin-top: 10px;
+  width: 100%;
+}
+.map-style-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.map-style-btn.active {
+  background: var(--info-blue);
+  color: #fff;
+}
+
+/* ================= PROFILE PANEL & ADVANCED ================= */
+.profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.profile-avatar-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--card-border);
+}
+.profile-avatar-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-info-box {
+  display: flex;
+  flex-direction: column;
+}
+.profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.profile-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.premium-pro-card {
+  background: linear-gradient(135deg, rgba(232, 160, 32, 0.08) 0%, rgba(192, 112, 16, 0.03) 100%);
+  border: 1px solid rgba(232, 160, 32, 0.25);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.premium-pro-card::after {
+  content: '★';
+  position: absolute;
+  right: -10px;
+  bottom: -20px;
+  font-size: 120px;
+  color: rgba(232, 160, 32, 0.04);
+  pointer-events: none;
+}
+.settings-menu-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.settings-item:last-child {
+  border-bottom: none;
+}
+.settings-item:hover {
+  background: rgba(255,255,255,0.02);
+}
+.settings-item-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-item-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* CSV file input button wrapper */
+.csv-upload-btn-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  width: 100%;
+}
+.csv-upload-btn-wrapper input[type=file] {
+  font-size: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ================= INSTAGRAM STORY EXPORTER ================= */
+#story-export-frame {
+  display: none;
+  width: 1080px;
+  height: 1920px;
+  background: linear-gradient(180deg, #0e141a 0%, #050608 100%);
+  position: fixed;
+  top: 9999px; left: 9999px; /* Offscreen */
+  z-index: -9999;
+  font-family: var(--font-passport);
+  padding: 80px 60px;
+  color: #fff;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+.story-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.story-title {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: var(--accent-pro-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.story-subtitle {
+  font-size: 24px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.story-map-container {
+  width: 100%;
+  height: 600px;
+  border-radius: 40px;
+  overflow: hidden;
+  border: 4px solid rgba(255,255,255,0.05);
+  background: #f8faf8;
+}
+.story-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+.story-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  margin: 40px 0;
+}
+.story-stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.05);
+  border-radius: 30px;
+  padding: 30px;
+  text-align: center;
+}
+.story-stat-number {
+  font-size: 64px;
+  font-weight: 800;
+  color: var(--accent-pro);
+}
+.story-stat-label {
+  font-size: 20px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 10px;
+  letter-spacing: 1px;
+}
+.story-footer {
+  text-align: center;
+  font-size: 20px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Responsive Desktop Optimization */
+@media (min-width: 900px) {
+  .phone-wrapper {
+    height: 90%;
+    margin-right: 40px;
+  }
+}
+
+/* ================= FLIGHTY ROW & TIMELINE LAYOUT ================= */
+.flight-row-container {
+  display: flex;
+  padding: 16px 0 0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  position: relative;
+}
+.flight-row-container:hover {
+  background-color: #fafbfc;
+}
+
+.flight-countdown-col {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.flight-countdown-num {
+  font-size: 32px;
+  font-weight: 800;
+  color: #000000;
+  line-height: 1;
+}
+.flight-countdown-unit {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6e7c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.flight-info-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e8eb; /* hairline iOS content divider */
+}
+.flight-row-container:last-of-type .flight-info-col {
+  border-bottom: none; /* remove boundary line for last flight row */
+}
+
+.flight-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.flight-info-airline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e7c8c;
+}
+.flight-airline-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.flight-info-date {
+  font-size: 13px;
+  color: #6e7c8c;
+  font-weight: 500;
+}
+
+.flight-info-route {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.flight-info-route .city-name {
+  font-weight: 700;
+  color: #000000;
+}
+.flight-info-route .route-to {
+  font-weight: 400;
+  color: #6e7c8c;
+  font-size: 16px;
+}
+
+.flight-info-times {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 2px;
+}
+.time-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.arrow-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e5e8eb;
+  color: #333333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+}
+.airport-code {
+  font-weight: 700;
+  color: #000000;
+  font-size: 14px;
+}
+.time-value {
+  font-weight: 500;
+  color: #6e7c8c;
+  font-size: 14px;
+}
+
+.layover-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f5f6f8;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6e7c8c;
+  margin: 4px 0 12px 72px; /* indents exactly with right flight details column */
+  border: 1px solid #e5e8eb;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.layover-row:hover {
+  background-color: #ebecf0;
+}
+.layover-row .chevron-right {
+  font-size: 14px;
+  color: #b0bac5;
+}
+
+/* Light mode panels adjustments */
+.panel-title {
+  color: #000000;
+}
+.panel-header-row {
+  margin-bottom: 24px;
+}
+.days-selectors {
+  background: #f0f1f4;
+  border: none;
+}
+.selector-btn.active {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.ios-status-bar {
+  color: #000000 !important;
+}
+.ios-icons svg {
+  color: #000000 !important;
+}
+
+.search-input-box {
+  background: #f0f1f4;
+  border: none;
+  color: #000;
+}
+.search-input-box input {
+  color: #000;
+}
+.search-input-box input::placeholder {
+  color: #999;
+}
+.search-result-flight {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e8eb;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.search-result-flight:last-child {
+  border-bottom: none;
+}
+.search-results-section {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.aircraft-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  color: #000000;
+}
+.aircraft-stat-title {
+  color: #6e7c8c;
+}
+.aircraft-stat-name {
+  color: #000000;
+}
+.aircraft-stat-count {
+  color: #6e7c8c;
+}
+
+.settings-menu-group {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+}
+.settings-item {
+  border-bottom: 1px solid #e5e8eb;
+}
+.settings-item:hover {
+  background: #fafbfc;
+}
+.settings-item-label {
+  color: #000000;
+}
+
+.custom-flight-form input {
+  background: #f0f1f4 !important;
+  color: #000 !important;
+  border: none !important;
+}
+#custom-flight-form label {
+  color: #6e7c8c !important;
+}
+#custom-flight-form input {
+  background: #f0f1f4 !important;
+  color: #000000 !important;
+  border: none !important;
+}
+#custom-flight-form button {
+  background: var(--accent-pro);
+  color: #ffffff;
+}
+
+#custom-flight-form input[type="checkbox"] {
+  accent-color: var(--accent-pro) !important;
+}
+#custom-flight-form label[for="form-completed-checkbox"] {
+  color: #000000 !important;
+}
+.past-flights-title {
+  color: #000;
+}
+.filter-toggle-switch {
+  background: #f0f1f4;
+  border: none;
+}
+.filter-switch-btn.active {
+  background: #ffffff;
+  color: #000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.past-flight-row {
+  border-bottom: 1px solid #e5e8eb;
+}
+.past-flight-row:hover {
+  background: #fafbfc;
+}
+.past-route-codes span {
+  color: #000000;
+}
+.past-route-cities {
+  color: #6e7c8c;
+}
+.past-date-col {
+  color: #6e7c8c;
+}
+.modal-content {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+.modal-header h2 {
+  color: #000000 !important;
+}
+.modal-header span {
+  color: #6e7c8c !important;
+}
+.airport-info-group span.airport-city {
+  color: #000000 !important;
+}
+.airport-info-group strong {
+  color: #000000 !important;
+}
+.modal-body strong {
+  color: #000000 !important;
+}
+.modal-body span {
+  color: #6e7c8c !important;
+}
+.metar-raw {
+  background: #f0f1f4 !important;
+  color: #333333 !important;
+  border: 1px solid #e5e8eb !important;
+}
+.metar-decoded {
+  color: #6e7c8c !important;
+}
+.pilot-weather-card {
+  background: #fcfdfe !important;
+  border: 1px solid #e5e8eb !important;
+}
+.pilot-weather-header {
+  color: #007aff !important;
+}
+.telemetry-box {
+  background: #f0f1f4 !important;
+  border: 1px solid #e5e8eb !important;
+}
+.telemetry-val {
+  color: #000000 !important;
+}
+.telemetry-lbl {
+  color: #6e7c8c !important;
+}
+.flight-progress-bar {
+  background: #e5e8eb !important;
+}
+.flight-progress-fill {
+  background: #007aff !important;
+}
+.flight-progress-airplane {
+  color: #007aff !important;
+}
+#reload-app-btn {
+  background: #34c759 !important;
+}
+#profile-cloud-sync-card {
+  background: rgba(0, 122, 255, 0.04) !important;
+  border: 1px solid rgba(0, 122, 255, 0.12) !important;
+}
+#profile-cloud-auth-form input {
+  background: #f0f1f4 !important;
+  border: none !important;
+  color: #000000 !important;
+}
+#email-sync-modal .modal-content {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+#email-sync-modal strong {
+  color: #000000 !important;
+}
+#email-sync-modal h4 {
+  color: #000000 !important;
+}
+#email-sync-modal p {
+  color: #6e7c8c !important;
+}
+#email-sync-modal kbd {
+  background: #f0f1f4 !important;
+  border: 1px solid #e5e8eb !important;
+  color: #000000 !important;
+}
+#supabase-sync-card {
+  background: rgba(0, 122, 255, 0.04) !important;
+  border: 1px solid rgba(0, 122, 255, 0.12) !important;
+}
+#supabase-auth-form input {
+  background: #f0f1f4 !important;
+  border: none !important;
+  color: #000000 !important;
+}
+.map-floating-capsule {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+  color: #000000 !important;
+}
+.map-floating-title {
+  color: #000000 !important;
+}
+.map-floating-stats {
+  color: #6e7c8c !important;
+}
+.map-toggle-btn {
+  background: transparent !important;
+  color: #6e7c8c !important;
+  border: none !important;
+}
+.map-toggle-btn.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+}
+.map-route-style-toggle {
+  background: #f0f1f4 !important;
+  border: none !important;
+}
+.map-style-btn {
+  color: #6e7c8c !important;
+}
+.map-style-btn.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+}
+.add-flight-btn {
+  background: var(--accent-pro) !important;
+  color: #ffffff !important;
+}
+.pro-badge {
+  box-shadow: none !important;
+}
+
+
+/* ================================================================
+   LOGIN OVERLAY — Full-Screen Auth Gate
+   ================================================================ */
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #090c14;
+  /* Use dvh so overlay fills the visual viewport even when iOS keyboard opens */
+  min-height: 100dvh;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 24px 20px;
+}
+
+/* Hide overlay when app is authenticated */
+.login-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.03);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* ── Animated starfield background ─────────────────────────── */
+.login-bg-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 15% 20%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 65%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 55% 30%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 75%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(2px 2px at 90% 50%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 48% 92%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 62% 8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  animation: loginStarPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes loginStarPulse {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* ── Background SVG route arcs ─────────────────────────────── */
+.login-bg-arcs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── Central login card ─────────────────────────────────────── */
+.login-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow:
+    0 0 0 0.5px rgba(255,255,255,0.06),
+    0 24px 80px rgba(0, 0, 0, 0.7),
+    0 0 120px rgba(0, 122, 255, 0.08);
+  animation: loginCardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes loginCardEntrance {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Brand / Logo ───────────────────────────────────────────── */
+.login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-plane-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 16px rgba(0, 122, 255, 0.5));
+  animation: loginPlaneBob 3s ease-in-out infinite;
+}
+
+@keyframes loginPlaneBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-5px) rotate(2deg); }
+}
+
+.login-title {
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+}
+
+.login-subtitle {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+  letter-spacing: 0.1px;
+}
+
+/* ── Divider ────────────────────────────────────────────────── */
+.login-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  margin-bottom: 24px;
+}
+
+/* ── Google button ──────────────────────────────────────────── */
+.login-btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  letter-spacing: 0.1px;
+  margin-bottom: 20px;
+}
+
+.login-btn-google:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.login-btn-google:active {
+  transform: scale(0.98);
+}
+
+.login-btn-google:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── OR separator ───────────────────────────────────────────── */
+.login-or-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.login-or-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.login-or-text {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Email / password form ──────────────────────────────────── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.login-input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  /* Prevents iOS zoom-in on focus (font-size ≥ 16px) */
+  -webkit-text-size-adjust: 100%;
+}
+
+.login-input::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+.login-input:focus {
+  border-color: rgba(0, 122, 255, 0.7);
+  background: rgba(0, 122, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Password input — make room for the eye button */
+#login-password-input {
+  padding-right: 46px;
+}
+
+.login-toggle-pw {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: rgba(255,255,255,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.login-toggle-pw:hover { color: rgba(255,255,255,0.7); }
+
+/* ── Error message ──────────────────────────────────────────── */
+.login-error {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #ff6b6b;
+  background: rgba(255, 59, 48, 0.08);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: none;
+  line-height: 1.4;
+}
+
+.login-error.visible {
+  display: block;
+  animation: loginShake 0.35s cubic-bezier(0.36,0.07,0.19,0.97);
+}
+
+@keyframes loginShake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+/* ── Primary submit button ──────────────────────────────────── */
+.login-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #007aff, #0051ba);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+  letter-spacing: 0.2px;
+  margin-top: 2px;
+}
+
+.login-btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(0, 122, 255, 0.5);
+}
+
+.login-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.login-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.login-spinner {
+  width: 18px;
+  height: 18px;
+  animation: loginSpin 0.8s linear infinite;
+}
+
+@keyframes loginSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Toggle login / signup mode ─────────────────────────────── */
+.login-toggle-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  margin-top: 4px;
+}
+
+.login-link-btn {
+  background: none;
+  border: none;
+  color: #007aff;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.login-link-btn:hover { opacity: 0.75; }
+
+/* ── Access-restricted notice ───────────────────────────────── */
+.login-access-notice {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: rgba(255, 150, 50, 0.85);
+  text-align: center;
+  margin-top: 16px;
+  background: rgba(255, 150, 50, 0.07);
+  border: 1px solid rgba(255, 150, 50, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  line-height: 1.4;
+}
+
+/* ── Responsive adjustments ─────────────────────────────────── */
+@media (max-height: 680px) {
+  .login-card {
+    padding: 24px 24px 20px;
+    border-radius: 20px;
+  }
+  .login-brand { margin-bottom: 18px; }
+  .login-plane-icon { font-size: 30px; margin-bottom: 6px; }
+  .login-title { font-size: 22px; }
+  .login-divider { margin-bottom: 16px; }
+  .login-btn-google { margin-bottom: 14px; padding: 11px 16px; }
+  .login-or-row { margin-bottom: 14px; }
+  .login-form { gap: 10px; }
+}
+
+@media (max-width: 380px) {
+  .login-card { padding: 28px 20px 22px; }
+}
 

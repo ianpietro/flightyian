@@ -1,6 +1,6 @@
 // Flighty IAN - Core Application Driver
-const AIRPORTS = window.AIRPORTS;
-const AIRLINES = window.AIRLINES;
+let AIRPORTS = window.AIRPORTS;
+let AIRLINES = window.AIRLINES;
 const PAST_FLIGHTS = window.PAST_FLIGHTS;
 const UPCOMING_FLIGHTS = window.UPCOMING_FLIGHTS;
 
@@ -19,103 +19,92 @@ class FlightyApp {
     this.mapLoaded = false;
     this.pendingPlot = null;
 
-    // Load data and merge real email flights (CORS-free offline database)
-    const storedPast = JSON.parse(localStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
-    const storedUpcoming = JSON.parse(localStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
+    // Initialize standard user flights list (uniquely identified by flightNumber + date)
+    if (localStorage.getItem('flighty_flights_initialized_v4') !== 'true') {
+      localStorage.setItem('flighty_past_flights', JSON.stringify(PAST_FLIGHTS));
+      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(UPCOMING_FLIGHTS));
+      localStorage.setItem('flighty_flights_initialized_v4', 'true');
+    }
 
-    const emailFlights = window.IMPORTED_FLIGHTS || [];
-    const emailPast = emailFlights.filter(f => f.status === "Completed");
-    const emailUpcoming = emailFlights.filter(f => f.status !== "Completed");
-
-    // Normalize and prepare 2024 historical flights
-    const airlineMapping = {
-      "Aerolíneas Argentinas": "AR",
-      "LATAM": "LA",
-      "GOL": "G3",
-      "Azul": "AD",
-      "Flybondi": "FO",
-      "Emirates": "EK",
-      "TAP Air Portugal": "TP",
-      "Copa Airlines": "CM",
-      "American Airlines": "AA",
-      "United Airlines": "UA",
-      "Delta Air Lines": "DL",
-      "Air France": "AF",
-      "Lufthansa": "LH",
-      "British Airways": "BA",
-      "Qatar Airways": "QR",
-      "Iberia": "IB"
-    };
-
-    const rawFlights2024 = window.flights2024 || [];
-    const normalized2024 = rawFlights2024.map(f => {
-      const airlineCode = airlineMapping[f.airline] || f.airline;
-      
-      let parsedDuration = 0;
-      if (typeof f.duration === 'string') {
-        const match = f.duration.match(/(\d+)h(?:(\d+)m)?/);
-        if (match) {
-          const hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2] || 0, 10);
-          parsedDuration = hours * 60 + minutes;
-        } else {
-          parsedDuration = parseInt(f.duration, 10) || 0;
-        }
-      } else {
-        parsedDuration = f.duration || 0;
-      }
-
-      let arrTime = "";
-      if (f.time && parsedDuration) {
-        const [h, m] = f.time.split(':').map(Number);
-        const totalMin = h * 60 + m + parsedDuration;
-        const newH = Math.floor(totalMin / 60) % 24;
-        const newM = totalMin % 60;
-        arrTime = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-      }
-
-      return {
-        id: f.id,
-        flightNumber: f.flightNumber,
-        airline: airlineCode,
-        from: f.from,
-        to: f.to,
-        date: f.date,
-        depTime: f.time || "00:00",
-        arrTime: arrTime || "00:00",
-        duration: parsedDuration,
-        distance: f.distance || 0,
-        delay: f.delay || 0,
-        aircraft: f.aircraft || "",
-        tailNumber: f.tailNumber || "",
-        status: "Completed",
-        seat: f.seat || "",
-        baggage: f.baggage || ""
-      };
-    });
-
-    // Deduplicate Past Flights (by Flight Number + Date combination)
-    const mergedPastMap = {};
-    storedPast.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
-    emailPast.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
-    normalized2024.forEach(f => mergedPastMap[`${f.flightNumber}_${f.date}`] = f);
-    this.pastFlights = Object.values(mergedPastMap);
-
-    // Deduplicate Upcoming Flights
-    const mergedUpcomingMap = {};
-    storedUpcoming.forEach(f => mergedUpcomingMap[`${f.flightNumber}_${f.date}`] = f);
-    emailUpcoming.forEach(f => mergedUpcomingMap[`${f.flightNumber}_${f.date}`] = f);
-    this.upcomingFlights = Object.values(mergedUpcomingMap);
+    this.pastFlights = JSON.parse(localStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
+    this.upcomingFlights = JSON.parse(localStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
 
     this.currentYear = "2026";
     this.activeTab = "my-flights";
+    this.mapRouteStyle = localStorage.getItem('map_route_style') || 'geodesic';
+
+    this.start();
+  }
+
+  // Load external databases asynchronously and initialize
+  async start() {
+    try {
+      const [resAirports, resAirlines] = await Promise.all([
+        fetch('assets/data/airports.json').then(r => r.json()),
+        fetch('assets/data/airlines.json').then(r => r.json())
+      ]);
+
+      const airportMap = {};
+      resAirports.forEach(ap => {
+        airportMap[ap.iata] = {
+          code: ap.iata,
+          city: ap.city_en,
+          name: ap.name_en,
+          lat: ap.lat,
+          lng: ap.lng,
+          country_code: ap.country_code
+        };
+      });
+
+      // Merge original window.AIRPORTS for custom definitions
+      Object.entries(window.AIRPORTS).forEach(([code, ap]) => {
+        if (!airportMap[code]) {
+          airportMap[code] = ap;
+        }
+      });
+
+      const airlineMap = {};
+      resAirlines.forEach(al => {
+        airlineMap[al.iata] = {
+          code: al.iata,
+          name: al.name_en,
+          color: (window.AIRLINES[al.iata] && window.AIRLINES[al.iata].color) || "#555555"
+        };
+      });
+      // Merge original window.AIRLINES for custom definitions
+      Object.entries(window.AIRLINES).forEach(([code, al]) => {
+        airlineMap[code] = {
+          code: code,
+          name: al.name,
+          color: al.color
+        };
+      });
+
+      this.airports = airportMap;
+      this.airlines = airlineMap;
+      AIRPORTS = this.airports;
+      AIRLINES = this.airlines;
+      window.AIRPORTS = this.airports;
+      window.AIRLINES = this.airlines;
+
+    } catch (e) {
+      console.error("Erro ao carregar os bancos de dados do passaporte:", e);
+      this.airports = window.AIRPORTS;
+      this.airlines = window.AIRLINES;
+    }
+
+    // Hide loading screen
+    const splash = document.getElementById("splash-screen");
+    if (splash) {
+      splash.classList.add("fade-out");
+      setTimeout(() => splash.remove(), 550);
+    }
 
     this.init();
   }
 
   init() {
-    // Wait for DOM
-    document.addEventListener("DOMContentLoaded", () => {
+    const initialize = () => {
       this.mapLoaded = false;
       this.initMap();
       this.initTabs();
@@ -125,49 +114,291 @@ class FlightyApp {
       this.initSearch();
       this.initModalEvents();
       this.updateGlobalBadge();
+      this.initPassportCustomizer();
+      this.initProfileTabListeners();
+      this.initMapboxTokenSettings();
       
       // Initialize Supabase cloud synchronization
       this.initSupabase();
 
       // Plot upcoming flights by default
       this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
-    });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initialize);
+    } else {
+      initialize();
+    }
   }
 
-  // Initialize Supabase Connection & Event Listeners
+  // ================================================================
+  // AUTH GATE — Initialize Supabase and enforce login overlay
+  // ================================================================
   async initSupabase() {
     this.supabase = null;
     this.currentUser = null;
+    this._loginMode = 'signin'; // 'signin' | 'signup'
 
     if (typeof supabase === 'undefined') {
-      console.log("[Supabase] SDK não carregado no navegador.");
+      console.warn("[Auth] Supabase SDK não carregado.");
+      this._dismissLoginOverlay(); // allow offline use
       return;
     }
 
     if (SUPABASE_URL === "SUA_URL_SUPABASE" || SUPABASE_ANON_KEY === "SUA_KEY_ANON_SUPABASE") {
-      console.log("[Supabase] Credenciais não configuradas. Rodando em modo local offline.");
+      console.warn("[Auth] Credenciais Supabase não configuradas. Modo local offline.");
+      this._dismissLoginOverlay();
       return;
     }
 
     try {
-      this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("[Supabase] Cliente inicializado com sucesso.");
+      this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          // Persist session in localStorage so the overlay stays hidden across refreshes
+          persistSession: true,
+          // Detect the OAuth hash fragment on redirect
+          detectSessionInUrl: true
+        }
+      });
 
-      // Check current session
+      // Listen for auth state changes (covers Google OAuth redirect callback)
+      this.supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`[Auth] onAuthStateChange: ${event}`);
+        if (session && session.user) {
+          await this._handleAuthSuccess(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          this.currentUser = null;
+          this._showLoginOverlay();
+          this.updateCloudSyncUI();
+        }
+      });
+
+      // Check for an existing session (handles page reloads)
       const { data: { session } } = await this.supabase.auth.getSession();
-      if (session) {
-        this.currentUser = session.user;
-        await this.syncFromSupabase();
+      if (session && session.user) {
+        await this._handleAuthSuccess(session.user);
+      } else {
+        // No session — show the login overlay
+        this._showLoginOverlay();
       }
 
-      // Configure UI handlers
+      // Wire up the full-screen login overlay UI
+      this._initLoginOverlayUI();
+
+      // Wire up the Perfil-tab mini sync card
       this.initSupabaseUI();
+
     } catch (e) {
-      console.error("[Supabase] Falha ao inicializar o banco na nuvem:", e);
+      console.error("[Auth] Falha ao inicializar:", e);
+      // On error, allow offline use but keep overlay dismissible
+      this._dismissLoginOverlay();
     }
   }
 
-  // Setup UI elements for Supabase login and status
+  // Check whitelist and, if approved, dismiss overlay and sync data
+  async _handleAuthSuccess(user) {
+    console.log(`[Auth] Verificando whitelist para: ${user.email}`);
+    const allowed = await this._isEmailAllowed(user.email);
+
+    if (!allowed) {
+      console.warn(`[Auth] Email não autorizado: ${user.email}. Fazendo logout.`);
+      // Sign out immediately
+      await this.supabase.auth.signOut();
+      this.currentUser = null;
+      // Show overlay with "not allowed" notice
+      this._showLoginOverlay({ showAccessDenied: true });
+      return;
+    }
+
+    this.currentUser = user;
+    this._dismissLoginOverlay();
+    this.updateCloudSyncUI();
+    await this.syncFromSupabase();
+  }
+
+  // Query the allowed_emails whitelist table
+  async _isEmailAllowed(email) {
+    try {
+      const { data, error } = await this.supabase
+        .from('allowed_emails')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+      if (error) {
+        // If we can't query (e.g. table doesn't exist yet), allow the admin email
+        console.warn("[Auth] Erro ao verificar whitelist:", error.message);
+        return email === 'ianpietrocapo@gmail.com';
+      }
+      return !!data;
+    } catch (err) {
+      console.warn("[Auth] Whitelist check failed:", err);
+      return email === 'ianpietrocapo@gmail.com';
+    }
+  }
+
+  // Show the login overlay
+  _showLoginOverlay(opts = {}) {
+    const overlay = document.getElementById('login-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+    // Clear any stale error
+    this._setLoginError('');
+    if (opts.showAccessDenied) {
+      const notice = document.getElementById('login-access-notice');
+      if (notice) notice.style.display = 'block';
+      this._setLoginError('⛔ Seu e-mail não está na lista de acesso autorizado.');
+    }
+  }
+
+  // Dismiss / fade out the login overlay
+  _dismissLoginOverlay() {
+    const overlay = document.getElementById('login-overlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    // Remove from DOM after transition so it doesn't intercept events
+    setTimeout(() => { overlay.style.display = 'none'; }, 450);
+  }
+
+  // Show an error message in the login overlay
+  _setLoginError(msg) {
+    const el = document.getElementById('login-error-msg');
+    if (!el) return;
+    if (msg) {
+      el.textContent = msg;
+      el.classList.add('visible');
+    } else {
+      el.textContent = '';
+      el.classList.remove('visible');
+    }
+  }
+
+  // Set loading state on the submit button
+  _setLoginLoading(loading) {
+    const btn = document.getElementById('login-submit-btn');
+    const label = document.getElementById('login-submit-label');
+    const spinner = document.getElementById('login-submit-spinner');
+    const googleBtn = document.getElementById('login-google-btn');
+    if (!btn) return;
+    btn.disabled = loading;
+    if (googleBtn) googleBtn.disabled = loading;
+    if (spinner) spinner.style.display = loading ? 'block' : 'none';
+    if (label) label.style.opacity = loading ? '0.4' : '1';
+  }
+
+  // Wire up the full-screen login overlay buttons & form
+  _initLoginOverlayUI() {
+    const overlay    = document.getElementById('login-overlay');
+    const googleBtn  = document.getElementById('login-google-btn');
+    const form       = document.getElementById('login-email-form');
+    const emailInput = document.getElementById('login-email-input');
+    const pwInput    = document.getElementById('login-password-input');
+    const modeSwitch = document.getElementById('login-mode-switch');
+    const modeText   = document.getElementById('login-mode-text');
+    const submitLbl  = document.getElementById('login-submit-label');
+    const togglePwBtn = document.getElementById('login-toggle-pw-btn');
+
+    if (!overlay) return;
+
+    // ── Google OAuth ──────────────────────────────────────────────
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async () => {
+        this._setLoginLoading(true);
+        this._setLoginError('');
+        try {
+          const redirectTo = window.location.origin + window.location.pathname;
+          const { error } = await this.supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo }
+          });
+          if (error) throw error;
+          // The page will redirect; loading state stays until redirect
+        } catch (err) {
+          this._setLoginLoading(false);
+          this._setLoginError('Erro ao iniciar login com Google: ' + err.message);
+        }
+      });
+    }
+
+    // ── Toggle show / hide password ───────────────────────────────
+    if (togglePwBtn && pwInput) {
+      togglePwBtn.addEventListener('click', () => {
+        const isHidden = pwInput.type === 'password';
+        pwInput.type = isHidden ? 'text' : 'password';
+        const icon = document.getElementById('login-pw-eye-icon');
+        if (icon) {
+          icon.innerHTML = isHidden
+            ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
+            : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+        }
+      });
+    }
+
+    // ── Toggle signin ↔ signup mode ───────────────────────────────
+    if (modeSwitch) {
+      modeSwitch.addEventListener('click', () => {
+        this._loginMode = this._loginMode === 'signin' ? 'signup' : 'signin';
+        const isSignup = this._loginMode === 'signup';
+        if (submitLbl) submitLbl.textContent = isSignup ? 'Cadastrar' : 'Entrar';
+        if (modeText)   modeText.textContent  = isSignup ? 'Já tem conta?' : 'Não tem conta?';
+        modeSwitch.textContent = isSignup ? 'Entrar' : 'Cadastrar';
+        this._setLoginError('');
+      });
+    }
+
+    // ── Email / Password form submit ──────────────────────────────
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = (emailInput?.value || '').trim();
+        const password = pwInput?.value || '';
+
+        if (!email || !password) {
+          this._setLoginError('Preencha e-mail e senha.');
+          return;
+        }
+        if (password.length < 6) {
+          this._setLoginError('A senha deve ter pelo menos 6 caracteres.');
+          return;
+        }
+
+        this._setLoginLoading(true);
+        this._setLoginError('');
+
+        try {
+          if (this._loginMode === 'signup') {
+            const { data, error } = await this.supabase.auth.signUp({ email, password });
+            this._setLoginLoading(false);
+            if (error) throw error;
+            if (data.user && !data.session) {
+              // Email confirmation required
+              this._setLoginError('✉️ Confirmação enviada! Verifique seu e-mail e clique no link de confirmação.');
+            } else if (data.session) {
+              // Auto-confirmed — onAuthStateChange will handle the rest
+            }
+          } else {
+            const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+            this._setLoginLoading(false);
+            if (error) throw error;
+            // onAuthStateChange will handle whitelist check + overlay dismiss
+          }
+        } catch (err) {
+          this._setLoginLoading(false);
+          // Translate common Supabase auth errors to Portuguese
+          const msg = err.message.includes('Invalid login credentials')
+            ? 'E-mail ou senha incorretos.'
+            : err.message.includes('Email not confirmed')
+            ? 'Confirme seu e-mail antes de entrar.'
+            : err.message.includes('User already registered')
+            ? 'Este e-mail já está cadastrado. Tente entrar.'
+            : err.message;
+          this._setLoginError(msg);
+        }
+      });
+    }
+  }
+
+  // Setup UI elements for Perfil-tab Supabase mini-card (sign-out, status)
   initSupabaseUI() {
     const authBtn = document.getElementById("supabase-auth-btn");
     const authForm = document.getElementById("supabase-auth-form");
@@ -181,49 +412,34 @@ class FlightyApp {
     if (authBtn && authForm) {
       authBtn.addEventListener("click", async () => {
         if (this.currentUser) {
-          // Logout
+          // Logout — will re-show the login overlay via onAuthStateChange
           const { error } = await this.supabase.auth.signOut();
           if (error) alert("Erro ao deslogar: " + error.message);
-          else {
-            this.currentUser = null;
-            window.location.reload();
-          }
         } else {
-          // Toggle login form
-          const isHidden = authForm.style.display === "none";
-          authForm.style.display = isHidden ? "flex" : "none";
-          authBtn.innerText = isHidden ? "Cancelar" : "Conectar";
+          // Show the full login overlay instead of the tiny inline form
+          this._showLoginOverlay();
         }
       });
     }
 
+    // Inline form in Perfil tab — kept for backwards compatibility
     if (loginBtn && emailInput && passwordInput) {
       loginBtn.addEventListener("click", async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value;
-
-        if (!email || !password) {
-          alert("Por favor, preencha e-mail e senha.");
-          return;
-        }
-
+        if (!email || !password) { alert("Preencha e-mail e senha."); return; }
         loginBtn.innerText = "Entrando...";
         loginBtn.disabled = true;
-
         const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
-        
         loginBtn.innerText = "Entrar";
         loginBtn.disabled = false;
-
         if (error) {
           alert("Erro no login: " + error.message);
         } else {
-          this.currentUser = data.user;
-          authForm.style.display = "none";
-          emailInput.value = "";
-          passwordInput.value = "";
-          await this.syncFromSupabase();
-          alert("Conectado à nuvem com sucesso! Seus dados foram sincronizados.");
+          // onAuthStateChange handles the rest
+          if (authForm) authForm.style.display = "none";
+          if (emailInput) emailInput.value = "";
+          if (passwordInput) passwordInput.value = "";
         }
       });
     }
@@ -232,30 +448,19 @@ class FlightyApp {
       signupBtn.addEventListener("click", async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value;
-
-        if (!email || !password) {
-          alert("Por favor, preencha e-mail e senha.");
-          return;
-        }
-
+        if (!email || !password) { alert("Preencha e-mail e senha."); return; }
         signupBtn.innerText = "Cadastrando...";
         signupBtn.disabled = true;
-
         const { data, error } = await this.supabase.auth.signUp({ email, password });
-        
         signupBtn.innerText = "Cadastrar";
         signupBtn.disabled = false;
-
-        if (error) {
-          alert("Erro no cadastro: " + error.message);
-        } else {
-          alert("Cadastro efetuado! Se um e-mail de confirmação foi exigido, confirme-o no seu e-mail. Caso contrário, você já pode entrar.");
-        }
+        if (error) alert("Erro no cadastro: " + error.message);
+        else alert("Cadastro efetuado! Verifique seu e-mail se precisar confirmar.");
       });
     }
   }
 
-  // Update UI Elements to reflect connection state
+  // Update Perfil-tab mini-card to reflect current auth state
   updateCloudSyncUI() {
     const statusLbl = document.getElementById("supabase-status-lbl");
     const authBtn = document.getElementById("supabase-auth-btn");
@@ -265,14 +470,12 @@ class FlightyApp {
         statusLbl.innerHTML = `
           Conectado como <strong style="color: var(--success-green);">${this.currentUser.email}</strong>
           <span style="display:block; font-size: 10px; color: var(--text-secondary); margin-top: 4px; cursor: pointer; user-select: none;" 
-                id="copy-uid-btn" title="Clique para copiar o UID para o arquivo .env">
+                id="copy-uid-btn" title="Clique para copiar o UID">
             UID: <code style="color: var(--accent-gold); font-family: monospace;">${this.currentUser.id}</code> 📋
           </span>
         `;
         authBtn.innerText = "Sair";
         authBtn.style.background = "#ff453a";
-        
-        // Add copy listener with fallback
         setTimeout(() => {
           const copyBtn = document.getElementById("copy-uid-btn");
           if (copyBtn) {
@@ -280,9 +483,7 @@ class FlightyApp {
               navigator.clipboard.writeText(this.currentUser.id).then(() => {
                 const oldHTML = copyBtn.innerHTML;
                 copyBtn.innerHTML = `UID: <code style="color: var(--success-green); font-family: monospace;">Copiado!</code>`;
-                setTimeout(() => {
-                  copyBtn.innerHTML = oldHTML;
-                }, 2000);
+                setTimeout(() => { copyBtn.innerHTML = oldHTML; }, 2000);
               });
             });
           }
@@ -300,6 +501,29 @@ class FlightyApp {
     if (!this.supabase || !this.currentUser) return;
 
     try {
+      // Check if we need to force overwrite the database for the new flights set
+      const needsSyncOverride = localStorage.getItem('flighty_cloud_synced_v4') !== 'true';
+      if (needsSyncOverride) {
+        console.log("[Supabase] Resetting cloud database to match local standard flights set...");
+        // Delete all flights for this user
+        const { error: deleteErr } = await this.supabase
+          .from('flights')
+          .delete()
+          .eq('user_id', this.currentUser.id);
+        
+        if (deleteErr) {
+          console.error("[Supabase] Error clearing old flights:", deleteErr);
+        } else {
+          // Upload all standard flights
+          const localFlights = [...this.pastFlights, ...this.upcomingFlights];
+          for (const f of localFlights) {
+            await this.saveFlightToSupabase(f);
+          }
+          localStorage.setItem('flighty_cloud_synced_v4', 'true');
+          console.log("[Supabase] Cloud database initialized successfully!");
+        }
+      }
+
       // 1. Fetch flights
       const { data: flights, error } = await this.supabase
         .from('flights')
@@ -308,7 +532,7 @@ class FlightyApp {
 
       if (error) throw error;
 
-      if (flights) {
+      if (flights && flights.length > 0) {
         const mappedFlights = flights.map(f => {
           const isCompleted = f.flight_date < new Date().toISOString().split('T')[0];
           return {
@@ -332,12 +556,26 @@ class FlightyApp {
         this.pastFlights = mappedFlights.filter(f => f.status === "Completed");
         this.upcomingFlights = mappedFlights.filter(f => f.status !== "Completed");
 
+        // Save local copy
+        localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+
         // Re-render
         this.renderMyFlights();
         this.renderPassport();
         this.updateGlobalBadge();
         this.clearMapRoutes();
         this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+      } else {
+        // Cloud is empty. If the user has local flights, auto-migrate them to the cloud database
+        const localFlights = [...this.pastFlights, ...this.upcomingFlights];
+        if (localFlights.length > 0) {
+          console.log("[Supabase] Banco na nuvem vazio. Migrando voos locais para o Supabase...");
+          for (const f of localFlights) {
+            await this.saveFlightToSupabase(f);
+          }
+          console.log("[Supabase] Migração concluída com sucesso!");
+        }
       }
 
       // 2. Sync profile details
@@ -398,7 +636,7 @@ class FlightyApp {
         user_id: this.currentUser.id,
         flight_date: f.date,
         airline_code: f.airline,
-        airline_name: window.AIRLINES[f.airline] || f.airline,
+        airline_name: window.AIRLINES[f.airline]?.name || f.airline,
         flight_number: f.flightNumber,
         origin_airport_code: f.from,
         origin_airport_name: `Aeroporto de ${f.from}`,
@@ -431,6 +669,17 @@ class FlightyApp {
 
   // Initialize Mapbox GL Map
   initMap() {
+    // Clean up existing map instance to prevent WebGL leaks
+    if (this.map) {
+      try {
+        this.map.remove();
+      } catch (e) {
+        console.error("[Map] Error removing old map instance:", e);
+      }
+      this.map = null;
+      this.mapLoaded = false;
+    }
+
     const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
     const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
     mapboxgl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
@@ -440,15 +689,15 @@ class FlightyApp {
     this.map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-52, -28], // [longitude, latitude]
-      zoom: 3,
-      pitch: 30,
+      center: [12, 10], 
+      zoom: 1.2, 
+      pitch: 0, 
       antialias: true
     });
 
     this.map.on('load', () => {
-      // Configure 3D Globe Projection
-      this.map.setProjection({ name: 'globe' });
+      // Configure Flat Mercator Projection to match the user's flat map layout
+      this.map.setProjection({ name: 'mercator' });
 
       // Enable premium atmosphere fog (Flighty visual style)
       this.map.setFog({
@@ -471,7 +720,7 @@ class FlightyApp {
 
   // Tab Navigation Handling
   initTabs() {
-    const navItems = document.querySelectorAll(".nav-item");
+    const navItems = document.querySelectorAll(".nav-item, .nav-search-btn");
     
     // Setup floating map capsule events
     const mapCapsule = document.getElementById("map-floating-ctrl");
@@ -599,21 +848,23 @@ class FlightyApp {
       const p1 = [depAir.lng, depAir.lat]; // Turf & Mapbox require [lng, lat]
       const p2 = [arrAir.lng, arrAir.lat];
 
-      // Generate geodesic curve between points
-      const start = turf.point(p1);
-      const end = turf.point(p2);
-      const greatCircleRoute = turf.greatCircle(start, end, { npoints: 100 });
-      
-      // Corrigir Linha de Data (180°) para evitar traçados reversos horizontais gigantes
-      const coordinates = greatCircleRoute.geometry.coordinates;
-      for (let i = 1; i < coordinates.length; i++) {
-        const prevLng = coordinates[i - 1][0];
-        const currentLng = coordinates[i][0];
-        if (currentLng - prevLng > 180) {
-          coordinates[i][0] -= 360;
-        } else if (prevLng - currentLng > 180) {
-          coordinates[i][0] += 360;
+      // Geodesic (greatCircle) or straight line route depending on map settings
+      let routeData;
+      if (this.mapRouteStyle === 'geodesic') {
+        const greatCircleRoute = turf.greatCircle(turf.point(p1), turf.point(p2), { npoints: 100 });
+        const coordinates = greatCircleRoute.geometry.coordinates;
+        for (let i = 1; i < coordinates.length; i++) {
+          const prevLng = coordinates[i - 1][0];
+          const currentLng = coordinates[i][0];
+          if (currentLng - prevLng > 180) {
+            coordinates[i][0] -= 360;
+          } else if (prevLng - currentLng > 180) {
+            coordinates[i][0] += 360;
+          }
         }
+        routeData = greatCircleRoute;
+      } else {
+        routeData = turf.lineString([p1, p2]);
       }
 
       const sourceId = `source-${flight.id}`;
@@ -621,7 +872,7 @@ class FlightyApp {
       this.map.addSource(sourceId, {
         type: 'geojson',
         lineMetrics: true, // Crucial for gradient support
-        data: greatCircleRoute
+        data: routeData
       });
       this.routeSources.push(sourceId);
 
@@ -722,16 +973,20 @@ class FlightyApp {
       return;
     }
 
-    // Sort upcoming flights by date
-    const sortedUpcoming = [...this.upcomingFlights].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Sort upcoming flights by date and departure time
+    const sortedUpcoming = [...this.upcomingFlights].sort((a, b) => {
+      const dateTimeA = new Date(`${a.date}T${a.depTime || '00:00'}:00`);
+      const dateTimeB = new Date(`${b.date}T${b.depTime || '00:00'}:00`);
+      return dateTimeA - dateTimeB;
+    });
 
-    sortedUpcoming.forEach(flight => {
+    sortedUpcoming.forEach((flight, index) => {
       const depAir = AIRPORTS[flight.from] || { city: flight.from, code: flight.from };
       const arrAir = AIRPORTS[flight.to] || { city: flight.to, code: flight.to };
       const airline = AIRLINES[flight.airline] || { name: flight.airline, color: "#555" };
 
       // Calculate countdown in days
-      const today = new Date("2026-05-22"); // Anchored to current time in prompt metadata
+      const today = new Date("2026-06-23"); // Anchored to current time in prompt metadata
       const flightDate = new Date(flight.date);
       const diffTime = flightDate - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -739,61 +994,103 @@ class FlightyApp {
       let countdownHTML = "";
       if (diffDays > 0) {
         countdownHTML = `
-          <div class="countdown-badge">
-            <span class="countdown-number">${diffDays}</span>
-            <div class="countdown-label">Dias</div>
-          </div>
+          <span class="flight-countdown-num">${diffDays}</span>
+          <span class="flight-countdown-unit">${diffDays === 1 ? 'DAY' : 'DAYS'}</span>
         `;
       } else if (diffDays === 0) {
         countdownHTML = `
-          <div class="countdown-badge" style="color: var(--success-green)">
-            <span class="countdown-number" style="color: var(--success-green)">HOJE</span>
-          </div>
+          <span class="flight-countdown-num" style="font-size: 16px; color: var(--accent-pro); line-height: 1.2;">TODAY</span>
         `;
       } else {
-        countdownHTML = `<div class="countdown-badge" style="color: var(--text-muted)">Realizado</div>`;
+        countdownHTML = `
+          <span class="flight-countdown-num" style="font-size: 14px; color: var(--text-muted); line-height: 1.2;">PAST</span>
+        `;
       }
 
-      const card = document.createElement("div");
-      card.className = "flight-card";
-      card.innerHTML = `
-        <div class="flight-card-top">
-          <div class="airline-badge">
-            <span class="airline-logo-dot" style="background-color: ${airline.color}"></span>
-            <span>${airline.name} • ${flight.flightNumber}</span>
-          </div>
-          <div style="text-align: right">
-            <span style="font-size: 13px; color: var(--text-secondary);">${this.formatDate(flight.date)}</span>
-          </div>
-        </div>
-        <div class="flight-route-row">
-          <div class="airport-info-group">
-            <span class="airport-city">${depAir.city}</span>
-            <div class="airport-details-sub">
-              <span class="airport-code-pill">${flight.from}</span>
-              <span>${flight.depTime}</span>
-            </div>
-          </div>
-          <span class="route-arrow">➔</span>
-          <div class="airport-info-group" style="text-align: right">
-            <span class="airport-city">${arrAir.city}</span>
-            <div class="airport-details-sub" style="justify-content: flex-end">
-              <span class="airport-code-pill">${flight.to}</span>
-              <span>${flight.arrTime}</span>
-            </div>
-          </div>
+      const logoSrc = `assets/images/airlines/${flight.airline.toLowerCase()}.png`;
+
+      const rowContainer = document.createElement("div");
+      rowContainer.style.display = "block";
+
+      const flightRow = document.createElement("div");
+      flightRow.className = "flight-row-container";
+      
+      flightRow.innerHTML = `
+        <div class="flight-countdown-col">
           ${countdownHTML}
         </div>
-        ${flight.alerts && flight.alerts.length > 0 ? `
-          <div class="card-alert-banner">
-            <span>⚠️</span>
-            <span>${flight.alerts[0].text}</span>
+        <div class="flight-info-col">
+          <div class="flight-info-top">
+            <div class="flight-info-airline">
+              <img src="${logoSrc}" class="flight-airline-logo" onerror="this.outerHTML='<span class=\'airline-logo-dot\' style=\'background-color: ${airline.color}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px;\'></span>'" />
+              <span>${airline.name} • ${flight.flightNumber}</span>
+            </div>
+            <div class="flight-info-date">${this.formatDate(flight.date)}</div>
           </div>
-        ` : ''}
+          <div class="flight-info-route">
+            <span class="city-name">${depAir.city}</span>
+            <span class="route-to">to</span>
+            <span class="city-name">${arrAir.city}</span>
+          </div>
+          <div class="flight-info-times">
+            <div class="time-block">
+              <span class="arrow-circle">↗</span>
+              <span class="airport-code">${flight.from}</span>
+              <span class="time-value">${flight.depTime}</span>
+            </div>
+            <div class="time-block">
+              <span class="arrow-circle">↘</span>
+              <span class="airport-code">${flight.to}</span>
+              <span class="time-value">${flight.arrTime}</span>
+            </div>
+          </div>
+          ${flight.alerts && flight.alerts.length > 0 ? `
+            <div class="card-alert-banner" style="margin-top: 8px;">
+              <span>⚠️</span>
+              <span>${flight.alerts[0].text}</span>
+            </div>
+          ` : ''}
+        </div>
       `;
 
-      card.addEventListener("click", () => this.openFlightDetailsModal(flight));
-      listContainer.appendChild(card);
+      flightRow.addEventListener("click", () => this.openFlightDetailsModal(flight));
+      rowContainer.appendChild(flightRow);
+
+      // Layover detection
+      if (index < sortedUpcoming.length - 1) {
+        const nextFlight = sortedUpcoming[index + 1];
+        if (nextFlight.from === flight.to) {
+          const currentArrDateTime = new Date(`${flight.date}T${flight.arrTime || '00:00'}:00`);
+          const nextDepDateTime = new Date(`${nextFlight.date}T${nextFlight.depTime || '00:00'}:00`);
+          
+          const layoverMs = nextDepDateTime - currentArrDateTime;
+          const layoverHours = layoverMs / (1000 * 60 * 60);
+
+          if (layoverMs > 0 && layoverHours < 24) {
+            const layoverMinutesTotal = Math.round(layoverMs / (1000 * 60));
+            const hrs = Math.floor(layoverMinutesTotal / 60);
+            const mins = layoverMinutesTotal % 60;
+            
+            const layoverText = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m at ${flight.to}`;
+
+            const layoverRow = document.createElement("div");
+            layoverRow.className = "layover-row";
+            layoverRow.innerHTML = `
+              <span>${layoverText}</span>
+              <span class="chevron-right">›</span>
+            `;
+
+            layoverRow.addEventListener("click", (e) => {
+              e.stopPropagation();
+              this.openFlightDetailsModal(nextFlight);
+            });
+
+            rowContainer.appendChild(layoverRow);
+          }
+        }
+      }
+
+      listContainer.appendChild(rowContainer);
     });
   }
 
@@ -867,43 +1164,30 @@ class FlightyApp {
     filteredFlights.forEach(f => airlinesSet.add(f.airline));
     const uniqueAirlines = airlinesSet.size;
 
-    // Update Text DOM Elements (preserving existing IDs)
-    const flightsCountEl = document.getElementById("pass-flights-count");
-    if (flightsCountEl) flightsCountEl.innerText = totalFlights;
-    
-    const distanceCountEl = document.getElementById("pass-distance-count");
-    if (distanceCountEl) distanceCountEl.innerText = totalDistance.toLocaleString("pt-BR") + " km";
-    
-    const timeCountEl = document.getElementById("pass-time-count");
-    if (timeCountEl) timeCountEl.innerText = `${totalHours}h ${remainingMinutes}m`;
-    
-    const airportsCountEl = document.getElementById("pass-airports-count");
-    if (airportsCountEl) airportsCountEl.innerText = uniqueAirports;
-    
-    const airlinesCountEl = document.getElementById("pass-airlines-count");
-    if (airlinesCountEl) airlinesCountEl.innerText = uniqueAirlines;
-
-    // Update Visited Flags based on flight destinations
-    const airportCountries = {
-      "CNF":"🇧🇷","IGU":"🇧🇷","GIG":"🇧🇷","VCP":"🇧🇷","GRU":"🇧🇷","LDB":"🇧🇷","SDU":"🇧🇷","BSB":"🇧🇷","UNA":"🇧🇷","BYO":"🇧🇷","FOR":"🇧🇷","STM":"🇧🇷","MCZ":"🇧🇷",
-      "AEP":"🇦🇷","IGR":"🇦🇷","REL":"🇦🇷","USH":"🇦🇷","EZE":"🇦🇷","BRC":"🇦🇷",
-      "DXB":"🇦🇪","LIS":"🇵🇹","MIA":"🇺🇸","JFK":"🇺🇸","MCO":"🇺🇸","LHR":"🇬🇧","CDG":"🇫🇷","MAD":"🇪🇸","BCN":"🇪🇸","PTY":"🇵🇦","DEL":"🇮🇳","FCO":"🇮🇹","CUN":"🇲🇽"
-    };
-
-    const visitedFlags = new Set();
+    // Unique visited countries based on ISO codes in airports database
+    const visitedCountryCodes = new Set();
     filteredFlights.forEach(f => {
-      if (airportCountries[f.from]) visitedFlags.add(airportCountries[f.from]);
-      if (airportCountries[f.to]) visitedFlags.add(airportCountries[f.to]);
+      const depAp = AIRPORTS[f.from];
+      const arrAp = AIRPORTS[f.to];
+      if (depAp && depAp.country_code) visitedCountryCodes.add(depAp.country_code.toUpperCase());
+      if (arrAp && arrAp.country_code) visitedCountryCodes.add(arrAp.country_code.toUpperCase());
     });
 
-    if (visitedFlags.size === 0) visitedFlags.add("🇧🇷"); // default flag
+    const getEmojiFlag = (cc) => {
+      if (!cc || cc.length !== 2) return "🏳️";
+      const codePoints = cc.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0));
+      return String.fromCodePoint(...codePoints);
+    };
 
     const flagsContainer = document.getElementById("passport-flags");
     if (flagsContainer) {
-      flagsContainer.innerHTML = [...visitedFlags].map(flag => `<span class="flag-icon">${flag}</span>`).join('');
+      if (visitedCountryCodes.size === 0) visitedCountryCodes.add("BR");
+      flagsContainer.innerHTML = [...visitedCountryCodes].map(code => {
+        return `<img class="flag-img-icon" src="assets/images/flags/${code.toLowerCase()}.png" alt="${code}" onerror="this.outerHTML='<span class=\'flag-icon\'>${getEmojiFlag(code)}</span>'" title="${code}" />`;
+      }).join('');
     }
 
-    // Populate Airline Badges inside booklet
+    // Populate Airline Badges inside booklet using PNG logos
     const airlineBadgesContainer = document.getElementById("passport-airline-logos");
     if (airlineBadgesContainer) {
       airlineBadgesContainer.innerHTML = "";
@@ -913,8 +1197,8 @@ class FlightyApp {
         const badge = document.createElement("div");
         badge.className = "passport-airline-logo-badge";
         badge.style.backgroundColor = airlineInfo.color || "#333";
-        badge.innerText = airlineCode;
         badge.title = airlineInfo.name;
+        badge.innerHTML = `<img src="assets/images/airlines/${airlineCode.toLowerCase()}.png" onerror="this.outerHTML='<span>${airlineCode}</span>'" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />`;
         airlineBadgesContainer.appendChild(badge);
       });
       if (visitedAirlines.length > 5) {
@@ -925,6 +1209,69 @@ class FlightyApp {
         airlineBadgesContainer.appendChild(badge);
       }
     }
+
+    // Calculate advanced statistics
+    const routeCounts = {};
+    filteredFlights.forEach(f => {
+      const routeKey = [f.from, f.to].sort().join(' ➔ ');
+      routeCounts[routeKey] = (routeCounts[routeKey] || 0) + 1;
+    });
+    let topRoute = "-";
+    let topRouteCount = 0;
+    Object.entries(routeCounts).forEach(([route, count]) => {
+      if (count > topRouteCount) {
+        topRouteCount = count;
+        topRoute = route;
+      }
+    });
+
+    const airportCounts = {};
+    filteredFlights.forEach(f => {
+      airportCounts[f.from] = (airportCounts[f.from] || 0) + 1;
+      airportCounts[f.to] = (airportCounts[f.to] || 0) + 1;
+    });
+    let topAirport = "-";
+    let topAirportCount = 0;
+    Object.entries(airportCounts).forEach(([ap, count]) => {
+      if (count > topAirportCount) {
+        topAirportCount = count;
+        topAirport = ap;
+      }
+    });
+
+    // Populate extra fields in details
+    const subStatContainer = document.querySelector(".passport-stat-details");
+    if (subStatContainer) {
+      subStatContainer.innerHTML = `
+        <div class="passport-sub-stat">
+          <span class="sub-label">Distance</span>
+          <span class="sub-value" id="pass-distance-count">${totalDistance.toLocaleString("pt-BR")} km</span>
+        </div>
+        <div class="passport-sub-stat">
+          <span class="sub-label">Flight Time</span>
+          <span class="sub-value" id="pass-time-count">${totalHours}h ${remainingMinutes}m</span>
+        </div>
+        <div class="passport-sub-stat">
+          <span class="sub-label">Airlines</span>
+          <span class="sub-value" id="pass-airlines-count">${uniqueAirlines}</span>
+        </div>
+        <div class="passport-sub-stat">
+          <span class="sub-label">Airports</span>
+          <span class="sub-value" id="pass-airports-count">${uniqueAirports}</span>
+        </div>
+        <div class="passport-sub-stat" title="Hub Pessoal (Aeroporto mais visitado)">
+          <span class="sub-label">Top Hub</span>
+          <span class="sub-value" style="color:var(--accent-pro); font-weight:700;">${topAirport} (${topAirportCount}x)</span>
+        </div>
+        <div class="passport-sub-stat" title="Rota mais frequente">
+          <span class="sub-label">Top Rota</span>
+          <span class="sub-value" style="color:var(--accent-pro); font-weight:700; font-size: 8px;">${topRoute} (${topRouteCount}x)</span>
+        </div>
+      `;
+    }
+
+    // Render Stamps
+    this.renderStamps(filteredFlights);
 
     // Initialize/Update Canvas Mini-Map inside passport booklet
     this.drawPassportCanvasMap(filteredFlights);
@@ -1005,8 +1352,8 @@ class FlightyApp {
 
   // Draw routes specifically on the Passport Mini-Map
   // ─── Canvas 2D World Map for Passport Booklet (no Mapbox token needed) ───
-  async drawPassportCanvasMap(flights) {
-    const canvas = document.getElementById('passport-mini-map');
+  async drawPassportCanvasMap(flights, canvasEl = null) {
+    const canvas = canvasEl || document.getElementById('passport-mini-map');
     if (!canvas) return;
 
     // Retina-ready sizing
@@ -1036,10 +1383,12 @@ class FlightyApp {
     ctx.fillStyle = shimmer;
     ctx.fillRect(0, 0, W, H * 0.6);
 
-    // ── 3. Equirectangular projection ────────────────────────────
+    // ── 3. Equirectangular projection (centered bounding box zooming in on flight paths) ────────────────────────────
     const pad = 4;
-    const projX = lng => pad + ((lng + 180) / 360) * (W - pad * 2);
-    const projY = lat => pad + ((90 - lat) / 180) * (H - pad * 2);
+    const minLng = -95, maxLng = 105;
+    const minLat = -58, maxLat = 62;
+    const projX = lng => pad + ((lng - minLng) / (maxLng - minLng)) * (W - pad * 2);
+    const projY = lat => pad + ((maxLat - lat) / (maxLat - minLat)) * (H - pad * 2);
 
     // ── 4. Fetch & cache world GeoJSON ───────────────────────────
     if (!window._passportWorldGeo) {
@@ -1297,7 +1646,7 @@ class FlightyApp {
 
   // Export passport booklet card to PNG image using html2canvas
   exportPassportAsPNG() {
-    const card = document.getElementById("mypassport-booklet-card");
+    const card = document.getElementById("passport-folder-wrapper") || document.getElementById("mypassport-booklet-card");
     if (!card) return;
 
     // Show a loading text on download button
@@ -1356,16 +1705,20 @@ class FlightyApp {
       const arrAir = AIRPORTS[flight.to] || { city: flight.to };
       const airline = AIRLINES[flight.airline] || { name: flight.airline };
 
+      let displayName = airline.name;
+      if (displayName === "Aerolíneas Argentinas") {
+        displayName = "Aerolíneas";
+      }
+
       const row = document.createElement("div");
       row.className = "past-flight-row";
       row.innerHTML = `
-        <div class="past-airline-col" style="color: ${airline.color || '#fff'}">${airline.name}</div>
+        <div class="past-airline-col" style="color: ${airline.color || '#fff'}" title="${airline.name}">${displayName}</div>
         <div class="past-route-col">
           <div class="past-route-codes">
             <span>${flight.from}</span>
             <span class="past-route-arrow">➔</span>
             <span>${flight.to}</span>
-            ${flight.delay > 0 ? `<span style="font-size:10px; background:var(--warning-bg); color:var(--warning-red); padding:1px 4px; border-radius:4px; font-weight:700;">+${flight.delay}m</span>` : ''}
           </div>
           <span class="past-route-cities">${depAir.city} para ${arrAir.city}</span>
         </div>
@@ -1499,21 +1852,28 @@ class FlightyApp {
 
     const p1 = [AIRPORTS[flight.from].lng, AIRPORTS[flight.from].lat];
     const p2 = [AIRPORTS[flight.to].lng, AIRPORTS[flight.to].lat];
-    const start = turf.point(p1);
-    const end = turf.point(p2);
     
-    // Generate geodesic points for smooth flight tracking
-    const greatCircleRoute = turf.greatCircle(start, end, { npoints: 300 });
-    const coordinates = greatCircleRoute.geometry.coordinates;
-
-    // Corrigir Linha de Data (180°) para evitar saltos ou linhas horizontais na animação do avião
-    for (let i = 1; i < coordinates.length; i++) {
-      const prevLng = coordinates[i - 1][0];
-      const currentLng = coordinates[i][0];
-      if (currentLng - prevLng > 180) {
-        coordinates[i][0] -= 360;
-      } else if (prevLng - currentLng > 180) {
-        coordinates[i][0] += 360;
+    // Animate smoothly along geodesic or straight line route depending on map styles
+    let coordinates = [];
+    if (this.mapRouteStyle === 'geodesic') {
+      const greatCircleRoute = turf.greatCircle(turf.point(p1), turf.point(p2), { npoints: 300 });
+      coordinates = greatCircleRoute.geometry.coordinates;
+      for (let i = 1; i < coordinates.length; i++) {
+        const prevLng = coordinates[i - 1][0];
+        const currentLng = coordinates[i][0];
+        if (currentLng - prevLng > 180) {
+          coordinates[i][0] -= 360;
+        } else if (prevLng - currentLng > 180) {
+          coordinates[i][0] += 360;
+        }
+      }
+    } else {
+      const steps = 300;
+      for (let i = 0; i <= steps; i++) {
+        const pct = i / steps;
+        const lng = p1[0] + (p2[0] - p1[0]) * pct;
+        const lat = p1[1] + (p2[1] - p1[1]) * pct;
+        coordinates.push([lng, lat]);
       }
     }
 
@@ -1892,20 +2252,16 @@ class FlightyApp {
     const resultsContainer = document.getElementById("search-results-list");
     const customForm = document.getElementById("custom-flight-form");
 
-    // Real-time matching filter inside registry database
+    // Fuzzy match algorithm matching airports or cities with score-ranking
     searchInput.addEventListener("input", (e) => {
       const query = e.target.value.toUpperCase().trim();
       resultsContainer.innerHTML = "";
 
       if (query.length < 2) return;
 
-      // Filter local airline registers
-      const matchedAirports = Object.values(AIRPORTS).filter(a => a.code.includes(query) || a.city.toUpperCase().includes(query));
-
-      // Generate a mock searchable flight for autocomplete
       const matches = [];
 
-      // Check if matches standard flights patterns e.g. "AD 6053"
+      // 1. Check if matches standard flights patterns e.g. "AD 6053"
       if (/^[A-Z0-9]{2}\s?\d{1,4}$/.test(query)) {
         const carrier = query.substring(0, 2);
         const codeNum = query.substring(2).trim();
@@ -1926,44 +2282,85 @@ class FlightyApp {
         }
       }
 
-      // Add a couple of route matches
-      matchedAirports.forEach(air => {
+      // 2. Perform fuzzy search with ranking over all 8,500 airports
+      const scoredAirports = [];
+      Object.values(AIRPORTS).forEach(ap => {
+        let score = 0;
+        const code = ap.code ? ap.code.toUpperCase() : "";
+        const city = ap.city ? ap.city.toUpperCase() : "";
+        const name = ap.name ? ap.name.toUpperCase() : "";
+
+        if (code === query) score = 10;
+        else if (code.startsWith(query)) score = 8;
+        else if (city.startsWith(query)) score = 5;
+        else if (city.includes(query)) score = 3;
+        else if (name.includes(query)) score = 1;
+
+        if (score > 0) {
+          scoredAirports.push({ ap, score });
+        }
+      });
+
+      scoredAirports.sort((a, b) => b.score - a.score);
+
+      // Add scored airports to autocomplete list
+      scoredAirports.slice(0, 5).forEach(({ ap }) => {
         matches.push({
-          flightNumber: `AD ${1000 + Math.floor(Math.random() * 8000)}`,
-          airline: "AD",
-          from: air.code,
-          to: air.code === "VCP" ? "SDU" : "VCP",
-          date: "2026-05-30",
-          depTime: "12:00",
-          arrTime: "13:10",
-          duration: 70,
-          distance: 450,
-          status: "Scheduled"
+          isAirportResult: true,
+          code: ap.code,
+          city: ap.city,
+          name: ap.name,
+          country: ap.country_code
         });
       });
 
       if (matches.length === 0) {
-        resultsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">Nenhum voo encontrado no banco. Preencha o formulário abaixo para criar um voo customizado!</div>`;
+        resultsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">Nenhum aeroporto ou voo encontrado. Preencha o formulário para criar manualmente.</div>`;
         return;
       }
 
-      matches.slice(0, 3).forEach(flight => {
+      matches.forEach(match => {
         const item = document.createElement("div");
         item.className = "search-result-flight";
-        item.innerHTML = `
-          <div class="airport-info-group">
-            <strong style="color: var(--info-blue)">${flight.flightNumber}</strong>
-            <span style="font-size: 12px; color: var(--text-secondary);">${flight.from} ➔ ${flight.to}</span>
-          </div>
-          <button class="add-flight-btn">Adicionar</button>
-        `;
+        
+        if (match.isAirportResult) {
+          item.innerHTML = `
+            <div class="airport-info-group">
+              <strong style="color: var(--accent-gold)">${match.code}</strong>
+              <span style="font-size: 12px; color: var(--text-secondary);">${match.city} — ${match.name}</span>
+            </div>
+            <button class="add-flight-btn" style="background: rgba(240,184,48,0.15); border-color: rgba(240,184,48,0.25); color: var(--accent-gold);">Usar</button>
+          `;
 
-        item.querySelector(".add-flight-btn").addEventListener("click", () => {
-          this.addNewFlight(flight);
-          alert(`Voo ${flight.flightNumber} agendado e inserido com sucesso no seu cronograma!`);
-          searchInput.value = "";
-          resultsContainer.innerHTML = "";
-        });
+          item.querySelector(".add-flight-btn").addEventListener("click", () => {
+            const depInput = document.getElementById("form-dep-code");
+            const arrInput = document.getElementById("form-arr-code");
+            if (depInput && (!depInput.value || depInput.value.length < 3)) {
+              depInput.value = match.code;
+            } else if (arrInput) {
+              arrInput.value = match.code;
+            }
+            alert(`Aeroporto ${match.code} preenchido no formulário manual!`);
+            searchInput.value = "";
+            resultsContainer.innerHTML = "";
+            depInput.focus();
+          });
+        } else {
+          item.innerHTML = `
+            <div class="airport-info-group">
+              <strong style="color: var(--info-blue)">${match.flightNumber}</strong>
+              <span style="font-size: 12px; color: var(--text-secondary);">${match.from} ➔ ${match.to}</span>
+            </div>
+            <button class="add-flight-btn">Adicionar</button>
+          `;
+
+          item.querySelector(".add-flight-btn").addEventListener("click", () => {
+            this.addNewFlight(match);
+            alert(`Voo ${match.flightNumber} agendado e inserido com sucesso!`);
+            searchInput.value = "";
+            resultsContainer.innerHTML = "";
+          });
+        }
 
         resultsContainer.appendChild(item);
       });
@@ -2126,7 +2523,7 @@ class FlightyApp {
       const duration = Math.round(distance / 8) + 30;
 
       // Determine completed vs upcoming based on date
-      const today = new Date("2026-05-22");
+      const today = new Date("2026-06-23");
       const chosenDate = new Date(flightDate + "T00:00:00");
       const isCompleted = chosenDate < today;
 
@@ -2225,6 +2622,415 @@ class FlightyApp {
     const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   }
+
+  // Render collected Visa Stamps in Passport tab
+  renderStamps(flights) {
+    const stampsGrid = document.getElementById("passport-visa-stamps-grid");
+    if (!stampsGrid) return;
+    
+    stampsGrid.innerHTML = "";
+    if (flights.length === 0) {
+      stampsGrid.innerHTML = `<div style="grid-column: span 4; text-align: center; color: var(--text-secondary); font-size: 12px; padding: 20px;">Nenhum visto ainda. Registre voos para carimbar!</div>`;
+      return;
+    }
+
+    const countryNames = {
+      "BR": "Brasil", "AR": "Argentina", "US": "USA", "PT": "Portugal", "FR": "França", 
+      "ES": "Espanha", "GB": "United Kingdom", "AE": "UAE", "PA": "Panamá", "IN": "India", 
+      "IT": "Itália", "MX": "México"
+    };
+
+    const entryDates = {};
+    flights.forEach(f => {
+      const dep = AIRPORTS[f.from];
+      const arr = AIRPORTS[f.to];
+      if (dep && dep.country_code) {
+        const code = dep.country_code.toUpperCase();
+        if (!entryDates[code] || f.date < entryDates[code]) entryDates[code] = f.date;
+      }
+      if (arr && arr.country_code) {
+        const code = arr.country_code.toUpperCase();
+        if (!entryDates[code] || f.date < entryDates[code]) entryDates[code] = f.date;
+      }
+    });
+
+    const colors = ["stamp-blue", "stamp-red", "stamp-green", "stamp-purple"];
+    Object.entries(entryDates).forEach(([code, date], idx) => {
+      const name = countryNames[code] || code;
+      const dateFormatted = date.split('-').reverse().join('.');
+      const colorClass = colors[idx % colors.length];
+      const rotation = (idx * 7) % 30 - 15; // Random angle -15 to 15 deg
+
+      const stamp = document.createElement("div");
+      stamp.className = `visa-stamp ${colorClass}`;
+      stamp.style.transform = `rotate(${rotation}deg)`;
+      stamp.innerHTML = `
+        <span style="font-weight: 800; font-size: 11px;">${code}</span>
+        <span style="font-size: 7px; text-transform: uppercase; margin: 1px 0;">${name}</span>
+        <span class="visa-stamp-date">${dateFormatted}</span>
+      `;
+      stampsGrid.appendChild(stamp);
+    });
+  }
+
+  // Manage booklet colors and Guilloche style overrides
+  initPassportCustomizer() {
+    const swatches = document.querySelectorAll(".color-swatch");
+    const booklet = document.getElementById("mypassport-booklet-card");
+    const savedTheme = localStorage.getItem('passport_cover_theme') || 'blue';
+
+    const folder = document.getElementById("passport-folder-wrapper");
+
+    const applyTheme = (theme) => {
+      if (booklet) {
+        booklet.classList.remove('theme-blue', 'theme-red', 'theme-green', 'theme-black', 'theme-azure');
+        booklet.classList.add(`theme-${theme}`);
+      }
+      if (folder) {
+        folder.classList.remove('theme-blue', 'theme-red', 'theme-green', 'theme-black', 'theme-azure');
+        folder.classList.add(`theme-${theme}`);
+      }
+      
+      swatches.forEach(s => {
+        if (s.dataset.theme === theme) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+    };
+
+    applyTheme(savedTheme);
+
+    swatches.forEach(swatch => {
+      swatch.addEventListener("click", () => {
+        const theme = swatch.dataset.theme;
+        localStorage.setItem('passport_cover_theme', theme);
+        applyTheme(theme);
+      });
+    });
+
+    const options = document.querySelectorAll(".guilloche-option");
+    const savedPattern = localStorage.getItem('passport_guilloche_pattern') || '1';
+
+    const applyPattern = (pattern) => {
+      if (!booklet) return;
+      booklet.style.backgroundImage = `linear-gradient(rgba(252, 251, 250, 0.82), rgba(252, 251, 250, 0.82)), radial-gradient(circle, #fcfbfa 20%, #f4f2e8 100%), url('assets/images/guilloche${pattern}.png')`;
+      booklet.style.backgroundBlendMode = 'normal, multiply, normal';
+      
+      options.forEach(o => {
+        if (o.dataset.pattern === pattern) o.classList.add('active');
+        else o.classList.remove('active');
+      });
+    };
+
+    applyPattern(savedPattern);
+
+    options.forEach(opt => {
+      opt.addEventListener("click", () => {
+        const pattern = opt.dataset.pattern;
+        localStorage.setItem('passport_guilloche_pattern', pattern);
+        applyPattern(pattern);
+      });
+    });
+
+    // Story export binding
+    const downloadStoryBtn = document.getElementById("download-story-btn");
+    if (downloadStoryBtn) {
+      downloadStoryBtn.addEventListener("click", () => this.exportInstagramStory());
+    }
+  }
+
+  // Setup Profile tab listeners
+  initProfileTabListeners() {
+    // CSV Input parser
+    const csvInput = document.getElementById("csv-file-input");
+    if (csvInput) {
+      csvInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          this.parseCSVFlights(event.target.result);
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Map styles toggle buttons (straight vs geodesic)
+    const btnGeodesic = document.getElementById("map-style-geodesic");
+    const btnStraight = document.getElementById("map-style-straight");
+
+    const updateMapRouteStyle = (style) => {
+      this.mapRouteStyle = style;
+      localStorage.setItem('map_route_style', style);
+      
+      if (btnGeodesic && btnStraight) {
+        if (style === 'geodesic') {
+          btnGeodesic.classList.add("active");
+          btnStraight.classList.remove("active");
+        } else {
+          btnStraight.classList.add("active");
+          btnGeodesic.classList.remove("active");
+        }
+      }
+
+      // Re-plot maps
+      this.clearMapRoutes();
+      const currentMapToggle = document.getElementById("map-toggle-past");
+      const isPastActive = currentMapToggle && currentMapToggle.classList.contains("active");
+      this.plotFlightsOnMap(isPastActive ? this.pastFlights : this.upcomingFlights, isPastActive ? 'past' : 'upcoming');
+    };
+
+    updateMapRouteStyle(this.mapRouteStyle);
+
+    if (btnGeodesic) btnGeodesic.addEventListener("click", () => updateMapRouteStyle('geodesic'));
+    if (btnStraight) btnStraight.addEventListener("click", () => updateMapRouteStyle('straight'));
+
+    // Hook Avatar profile triggers
+    const profileTrigger = document.getElementById("profile-avatar-trigger");
+    const profileImg = document.getElementById("profile-avatar-img");
+    const photoImg = document.getElementById("passport-photo-img");
+
+    if (profileTrigger) {
+      profileTrigger.addEventListener("click", () => {
+        document.getElementById("passport-photo-input").click();
+      });
+    }
+
+    // Monitor local storage photo changes to update Profile tab
+    window.addEventListener("storage", () => {
+      const savedPhoto = localStorage.getItem("passport-photo-dataurl");
+      if (savedPhoto) {
+        if (profileImg) profileImg.src = savedPhoto;
+        if (photoImg) photoImg.src = savedPhoto;
+      }
+    });
+
+    // Listen to surname / givenname edits
+    const updateDisplayName = () => {
+      const surname = document.getElementById("passport-surname")?.innerText || "CAPO";
+      const given = document.getElementById("passport-givenname")?.innerText || "IAN";
+      const profileName = document.getElementById("profile-display-name");
+      if (profileName) profileName.innerText = `${given} ${surname}`.toUpperCase();
+    };
+
+    updateDisplayName();
+    
+    document.getElementById("passport-surname")?.addEventListener("blur", updateDisplayName);
+    document.getElementById("passport-givenname")?.addEventListener("blur", updateDisplayName);
+  }
+
+  // Hook Mapbox Access Token form events
+  initMapboxTokenSettings() {
+    const tokenInput = document.getElementById("settings-mapbox-token");
+    const saveBtn = document.getElementById("save-mapbox-token-btn");
+    const statusLbl = document.getElementById("mapbox-token-status");
+
+    if (tokenInput && saveBtn) {
+      const currentToken = localStorage.getItem('MAPBOX_TOKEN') || '';
+      tokenInput.value = currentToken;
+
+      if (currentToken) {
+        statusLbl.innerText = "Status: Token salvo localmente";
+        statusLbl.style.color = "var(--success-green)";
+        statusLbl.style.display = "block";
+      }
+
+      saveBtn.addEventListener("click", () => {
+        const tokenVal = tokenInput.value.trim();
+        if (!tokenVal) {
+          localStorage.removeItem('MAPBOX_TOKEN');
+          statusLbl.innerText = "Status: Nenhum token salvo (usando fallback)";
+          statusLbl.style.color = "var(--text-secondary)";
+        } else {
+          localStorage.setItem('MAPBOX_TOKEN', tokenVal);
+          statusLbl.innerText = "Status: Token salvo! Recarregando mapa...";
+          statusLbl.style.color = "var(--success-green)";
+        }
+        statusLbl.style.display = "block";
+
+        // Re-initialize map
+        this.initMap();
+
+        // Wait for map load and replot
+        setTimeout(() => {
+          const currentMapToggle = document.getElementById("map-toggle-past");
+          const isPastActive = currentMapToggle && currentMapToggle.classList.contains("active");
+          this.plotFlightsOnMap(isPastActive ? this.pastFlights : this.upcomingFlights, isPastActive ? 'past' : 'upcoming');
+        }, 1200);
+      });
+    }
+  }
+
+  // Parse custom user flights uploaded via CSV
+  parseCSVFlights(text) {
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) {
+      alert("Erro: Arquivo CSV vazio ou corrompido!");
+      return;
+    }
+
+    const headers = lines[0].split(/[;,]/).map(h => h.trim().toLowerCase());
+    const dateIdx = headers.findIndex(h => h.includes("dat") || h.includes("date"));
+    const flightIdx = headers.findIndex(h => h.includes("voo") || h.includes("flight"));
+    const fromIdx = headers.findIndex(h => h.includes("ori") || h.includes("dep") || h.includes("from"));
+    const toIdx = headers.findIndex(h => h.includes("dest") || h.includes("arr") || h.includes("to"));
+    const seatIdx = headers.findIndex(h => h.includes("assento") || h.includes("seat"));
+    const tailIdx = headers.findIndex(h => h.includes("matr") || h.includes("tail") || h.includes("reg"));
+
+    if (dateIdx === -1 || flightIdx === -1 || fromIdx === -1 || toIdx === -1) {
+      alert("❌ Formato de CSV inválido! Certifique-se de que a primeira linha contenha os cabeçalhos: Data, Voo, Origem, Destino.");
+      return;
+    }
+
+    let countPast = 0;
+    let countUpcoming = 0;
+    const today = new Date("2026-06-23");
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const cells = line.split(/[;,]/).map(c => c.trim().replace(/^["']|["']$/g, ''));
+      if (cells.length < 4) continue;
+
+      const dateVal = cells[dateIdx];
+      const flightNum = cells[flightIdx].toUpperCase();
+      const from = cells[fromIdx].toUpperCase();
+      const to = cells[toIdx].toUpperCase();
+      const seat = seatIdx !== -1 ? cells[seatIdx] : "";
+      const tail = tailIdx !== -1 ? cells[tailIdx] : "";
+
+      if (!AIRPORTS[from] || !AIRPORTS[to]) {
+        console.warn(`Aeroporto desconhecido no CSV na linha ${i}: ${from} ou ${to}. Ignorando voo.`);
+        continue;
+      }
+
+      const distance = Math.round(this.calculateDistance(
+        AIRPORTS[from].lat, AIRPORTS[from].lng,
+        AIRPORTS[to].lat, AIRPORTS[to].lng
+      ));
+      const duration = Math.round(distance / 8) + 30;
+
+      const carrier = flightNum.substring(0, 2);
+      const isCompleted = new Date(dateVal + "T00:00:00") < today;
+
+      const flightObj = {
+        id: `csv_${Date.now()}_${i}`,
+        flightNumber: flightNum,
+        airline: AIRLINES[carrier] ? carrier : "AD",
+        from: from,
+        to: to,
+        date: dateVal,
+        depTime: "12:00",
+        arrTime: "13:30",
+        duration: duration,
+        distance: distance,
+        delay: isCompleted ? Math.floor(Math.random() * 15) : 0,
+        aircraft: "Commercial",
+        tailNumber: tail,
+        seat: seat,
+        status: isCompleted ? "Completed" : "Scheduled"
+      };
+
+      if (isCompleted) {
+        if (!this.pastFlights.some(f => f.flightNumber === flightNum && f.date === dateVal)) {
+          this.pastFlights.push(flightObj);
+          countPast++;
+          if (this.supabase && this.currentUser) this.saveFlightToSupabase(flightObj);
+        }
+      } else {
+        if (!this.upcomingFlights.some(f => f.flightNumber === flightNum && f.date === dateVal)) {
+          this.upcomingFlights.push(flightObj);
+          countUpcoming++;
+          if (this.supabase && this.currentUser) this.saveFlightToSupabase(flightObj);
+        }
+      }
+    }
+
+    if (countPast > 0 || countUpcoming > 0) {
+      localStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      localStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+      
+      this.renderMyFlights();
+      this.renderPassport();
+      this.updateGlobalBadge();
+      
+      alert(`🎉 Importação de CSV Concluída! Adicionados: ${countPast} voos no histórico e ${countUpcoming} agendados.`);
+      document.querySelector(`.nav-item[data-tab="${countPast > 0 ? 'passport' : 'my-flights'}"]`).click();
+    } else {
+      alert("Nenhum voo novo foi encontrado no CSV (registros já existentes ou IATAs inválidos).");
+    }
+  }
+
+  // Render offscreen portrait Instagram Story template and capture
+  async exportInstagramStory() {
+    const frame = document.getElementById("story-export-frame");
+    const downloadBtn = document.getElementById("download-story-btn");
+    if (!frame || !downloadBtn) return;
+
+    const originalText = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = "<span>⏳</span> Gerando Story...";
+    downloadBtn.disabled = true;
+
+    // Reveal offscreen canvas
+    frame.style.display = "flex";
+
+    // Gather filtered stats
+    const filteredFlights = this.pastFlights.filter(flight => {
+      if (this.currentYear === "All-Time") return true;
+      return flight.date.startsWith(this.currentYear);
+    });
+
+    const totalFlights = filteredFlights.length;
+    const totalDistance = filteredFlights.reduce((sum, f) => sum + f.distance, 0);
+    const totalMinutes = filteredFlights.reduce((sum, f) => sum + f.duration, 0);
+    const totalHours = Math.floor(totalMinutes / 60);
+
+    const visitedCountryCodes = new Set();
+    filteredFlights.forEach(f => {
+      const depAp = AIRPORTS[f.from];
+      const arrAp = AIRPORTS[f.to];
+      if (depAp && depAp.country_code) visitedCountryCodes.add(depAp.country_code.toUpperCase());
+      if (arrAp && arrAp.country_code) visitedCountryCodes.add(arrAp.country_code.toUpperCase());
+    });
+    const totalCountries = visitedCountryCodes.size === 0 ? 1 : visitedCountryCodes.size;
+
+    document.getElementById("story-stat-flights").innerText = totalFlights;
+    document.getElementById("story-stat-distance").innerText = `${totalDistance.toLocaleString("pt-BR")} km`;
+    document.getElementById("story-stat-time").innerText = `${totalHours}h`;
+    document.getElementById("story-stat-countries").innerText = totalCountries;
+
+    // Draw high resolution map on story canvas
+    const storyCanvas = document.getElementById('story-canvas-map');
+    if (storyCanvas) {
+      await this.drawPassportCanvasMap(filteredFlights, storyCanvas);
+    }
+
+    setTimeout(() => {
+      html2canvas(frame, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null
+      }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = `FlightyIAN_Story_${this.currentYear}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+        // Restore
+        frame.style.display = "none";
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      }).catch(err => {
+        console.error("Story render error:", err);
+        alert("Erro ao exportar o Story.");
+        frame.style.display = "none";
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      });
+    }, 450);
+  }
 }
 
 // Instantiate
@@ -2234,7 +3040,9 @@ const app = new FlightyApp();
 window.onYearChange = () => {
   app.renderPassport();
   app.clearMapRoutes();
-  app.plotFlightsOnMap(app.pastFlights, 'past');
+  const currentMapToggle = document.getElementById("map-toggle-past");
+  const isPastActive = currentMapToggle && currentMapToggle.classList.contains("active");
+  app.plotFlightsOnMap(isPastActive ? app.pastFlights : app.upcomingFlights, isPastActive ? 'past' : 'upcoming');
 };
 
 // Reset LocalStorage helper for user debugging
