@@ -1,4 +1,7 @@
 // Flighty IAN - Core Application Driver
+if (typeof window.mapboxgl === 'undefined' && typeof window.maplibregl !== 'undefined') {
+  window.mapboxgl = window.maplibregl;
+}
 let AIRPORTS = window.AIRPORTS;
 let AIRLINES = window.AIRLINES;
 const PAST_FLIGHTS = window.PAST_FLIGHTS;
@@ -819,13 +822,13 @@ class FlightyApp {
 
     const tokenPart1 = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycnA3ZXVod293amQifQ';
     const tokenPart2 = 'cx4GBfCx5y55B1zLqJha8w';
-    mapboxgl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
+    maplibregl.accessToken = window.NEXT_PUBLIC_MAPBOX_TOKEN || 
                            localStorage.getItem('MAPBOX_TOKEN') || 
                            `${tokenPart1}.${tokenPart2}`;
 
-    this.map = new mapboxgl.Map({
+    this.map = new maplibregl.Map({
       container: 'map',
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [12, 10], 
       zoom: 1.2, 
       pitch: 0, 
