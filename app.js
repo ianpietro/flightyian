@@ -91,15 +91,28 @@ class FlightyApp {
     this.pendingPlot = null;
 
     // Initialize standard user flights list (uniquely identified by flightNumber + date)
+    // Only load static/mock databases if user is not logging in or has not logged in yet.
+    // However, to keep it clean, if there is a session or cloud sync flag, we start with empty lists
+    // and wait for syncFromSupabase to populate them.
+    const isCloudSynced = safeStorage.getItem('flighty_cloud_synced_v4') === 'true';
+
     if (safeStorage.getItem('flighty_flights_initialized_v4') !== 'true') {
-      safeStorage.setItem('flighty_past_flights', JSON.stringify(PAST_FLIGHTS));
-      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(UPCOMING_FLIGHTS));
+      if (!isCloudSynced) {
+        safeStorage.setItem('flighty_past_flights', JSON.stringify(PAST_FLIGHTS));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(UPCOMING_FLIGHTS));
+      } else {
+        safeStorage.setItem('flighty_past_flights', JSON.stringify([]));
+        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify([]));
+      }
       safeStorage.setItem('flighty_flights_initialized_v4', 'true');
     }
 
-    this.pastFlights = JSON.parse(safeStorage.getItem('flighty_past_flights')) || PAST_FLIGHTS;
-    this.upcomingFlights = JSON.parse(safeStorage.getItem('flighty_upcoming_flights')) || UPCOMING_FLIGHTS;
-    this.mergeStaticFlights();
+    this.pastFlights = JSON.parse(safeStorage.getItem('flighty_past_flights')) || (isCloudSynced ? [] : PAST_FLIGHTS);
+    this.upcomingFlights = JSON.parse(safeStorage.getItem('flighty_upcoming_flights')) || (isCloudSynced ? [] : UPCOMING_FLIGHTS);
+    
+    if (!isCloudSynced) {
+      this.mergeStaticFlights();
+    }
 
     this.currentYear = "All-Time";
     this.activeTab = "my-flights";
@@ -373,8 +386,18 @@ class FlightyApp {
           await this._handleAuthSuccess(session.user);
         } else if (event === 'SIGNED_OUT') {
           this.currentUser = null;
+          safeStorage.removeItem('flighty_cloud_synced_v4');
+          safeStorage.removeItem('flighty_flights_initialized_v4');
+          safeStorage.removeItem('flighty_past_flights');
+          safeStorage.removeItem('flighty_upcoming_flights');
+          
+          this.pastFlights = PAST_FLIGHTS;
+          this.upcomingFlights = UPCOMING_FLIGHTS;
+          
           this._showLoginOverlay();
           this.updateCloudSyncUI();
+          this.renderMyFlights();
+          this.renderPassport();
         }
       });
 
