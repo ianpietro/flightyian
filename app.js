@@ -1328,7 +1328,60 @@ class FlightyApp {
         </div>
       `;
 
-      flightRow.addEventListener("click", () => this.openFlightDetailsModal(flight));
+      // Context menu for desktop right click
+      flightRow.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        this.showContextMenu(e.clientX, e.clientY, flight);
+      });
+
+      // Mobile Touch events for long press
+      let touchTimeout = null;
+      let startX = 0;
+      let startY = 0;
+      let isLongPress = false;
+
+      flightRow.addEventListener("touchstart", (e) => {
+        isLongPress = false;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        
+        touchTimeout = setTimeout(() => {
+          isLongPress = true;
+          if (navigator.vibrate) {
+            navigator.vibrate(50); // Small haptic feedback
+          }
+          this.showContextMenu(touch.clientX, touch.clientY, flight);
+        }, 700);
+      }, { passive: true });
+
+      flightRow.addEventListener("touchmove", (e) => {
+        const touch = e.touches[0];
+        const diffX = Math.abs(touch.clientX - startX);
+        const diffY = Math.abs(touch.clientY - startY);
+        if (diffX > 10 || diffY > 10) {
+          if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            touchTimeout = null;
+          }
+        }
+      }, { passive: true });
+
+      flightRow.addEventListener("touchend", (e) => {
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+          touchTimeout = null;
+        }
+      }, { passive: true });
+
+      flightRow.addEventListener("click", (e) => {
+        if (isLongPress) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        this.openFlightDetailsModal(flight);
+      });
       rowContainer.appendChild(flightRow);
 
       // Layover detection
@@ -2708,13 +2761,19 @@ class FlightyApp {
           return;
         }
 
-        const idx = this.pastFlights.findIndex(f => f.id === id);
+        let isPastList = true;
+        let idx = this.pastFlights.findIndex(f => f.id === id);
+        if (idx === -1) {
+          idx = this.upcomingFlights.findIndex(f => f.id === id);
+          isPastList = false;
+        }
+
         if (idx === -1) {
           alert("⚠️ Voo não encontrado.");
           return;
         }
 
-        const flight = this.pastFlights[idx];
+        const flight = isPastList ? this.pastFlights[idx] : this.upcomingFlights[idx];
         
         // Update local object properties
         flight.flightNumber = flightNum;
@@ -2740,7 +2799,11 @@ class FlightyApp {
         flight.airline = AIRLINES[carrier] ? carrier : flight.airline;
 
         // Save local
-        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        if (isPastList) {
+          safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        } else {
+          safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        }
 
         // Close modal
         closeEditModal();
@@ -2790,7 +2853,11 @@ class FlightyApp {
                   .eq('id', existing[0].id);
                 if (error) throw error;
                 flight.id = existing[0].id;
-                safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+                if (isPastList) {
+                  safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+                } else {
+                  safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+                }
               } else {
                 await this.saveFlightToSupabase(flight);
               }
@@ -2803,8 +2870,14 @@ class FlightyApp {
 
         // Re-render passport stats, table, and maps
         this.renderPassport();
+        this.renderMyFlights();
+        this.updateGlobalBadge();
         this.clearMapRoutes();
-        this.plotFlightsOnMap(this.pastFlights, 'past');
+        if (isPastList) {
+          this.plotFlightsOnMap(this.pastFlights, 'past');
+        } else {
+          this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+        }
         
         alert("🎉 Voo atualizado com sucesso!");
       });
@@ -2816,19 +2889,30 @@ class FlightyApp {
         const id = document.getElementById("edit-form-flight-id").value;
         if (!id) return;
 
-        const idx = this.pastFlights.findIndex(f => f.id === id);
+        let isPastList = true;
+        let idx = this.pastFlights.findIndex(f => f.id === id);
+        if (idx === -1) {
+          idx = this.upcomingFlights.findIndex(f => f.id === id);
+          isPastList = false;
+        }
+
         if (idx === -1) {
           alert("⚠️ Voo não encontrado.");
           return;
         }
 
-        const flight = this.pastFlights[idx];
+        const flight = isPastList ? this.pastFlights[idx] : this.upcomingFlights[idx];
         const confirmDelete = confirm(`Deseja realmente apagar o voo ${flight.flightNumber || ""} de ${flight.from} para ${flight.to}?`);
         if (!confirmDelete) return;
 
         // Remove from local array
-        this.pastFlights.splice(idx, 1);
-        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        if (isPastList) {
+          this.pastFlights.splice(idx, 1);
+          safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+        } else {
+          this.upcomingFlights.splice(idx, 1);
+          safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
+        }
 
         // Close edit modal
         closeEditModal();
@@ -2861,8 +2945,14 @@ class FlightyApp {
 
         // Re-render passport stats, table, and maps
         this.renderPassport();
+        this.renderMyFlights();
+        this.updateGlobalBadge();
         this.clearMapRoutes();
-        this.plotFlightsOnMap(this.pastFlights, 'past');
+        if (isPastList) {
+          this.plotFlightsOnMap(this.pastFlights, 'past');
+        } else {
+          this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
+        }
 
         alert("🗑️ Voo excluído com sucesso.");
       });
