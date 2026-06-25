@@ -87,13 +87,26 @@ AIRPORTS_DB = {
   "PMW": {"lat": -10.2900, "lng": -48.3578, "city": "Palmas"},
   "BSB": {"lat": -15.8692, "lng": -47.9172, "city": "Brasília"},
   "GYN": {"lat": -16.6322, "lng": -49.2206, "city": "Goiânia"},
-  "CGB": {"lat": -15.6531, "lng": -56.1167, "city": "Cuiabá"}
+  "CGB": {"lat": -15.6531, "lng": -56.1167, "city": "Cuiabá"},
+  "SCL": {"lat": -33.3930, "lng": -70.7858, "city": "Santiago"},
+  "CJC": {"lat": -22.4981, "lng": -68.9036, "city": "Calama"},
+  "BOG": {"lat": 4.7017, "lng": -74.1469, "city": "Bogotá"},
+  "MDE": {"lat": 6.1645, "lng": -75.4227, "city": "Medellín"},
+  "ADZ": {"lat": 12.5767, "lng": -81.7114, "city": "San Andrés"},
+  "MVD": {"lat": -34.8384, "lng": -56.0308, "city": "Montevideo"},
+  "FLN": {"lat": -27.6702, "lng": -48.5525, "city": "Florianópolis"},
+  "NVT": {"lat": -26.8787, "lng": -48.6510, "city": "Navegantes"},
+  "CXJ": {"lat": -29.1961, "lng": -51.1897, "city": "Caxias do Sul"},
+  "PMW": {"lat": -10.2900, "lng": -48.3578, "city": "Palmas"},
+  "BSB": {"lat": -15.8692, "lng": -47.9172, "city": "Brasília"},
+  "GYN": {"lat": -16.6322, "lng": -49.2206, "city": "Goiânia"},
+  "CGR": {"lat": -20.4687, "lng": -54.6725, "city": "Campo Grande"}
 }
 
 AIRLINES_DB = {
   "AD": "Azul",
   "G3": "GOL",
-  "AR": "Aerolíneas Argentinas",
+  "AR": "Aerolineas Argentinas",
   "FO": "Flybondi",
   "LA": "LATAM",
   "JJ": "LATAM",
@@ -107,7 +120,12 @@ AIRLINES_DB = {
   "LH": "Lufthansa",
   "BA": "British Airways",
   "QR": "Qatar Airways",
-  "IB": "Iberia"
+  "IB": "Iberia",
+  "AV": "Avianca",
+  "H2": "Sky Airline",
+  "JA": "JetSMART",
+  "WJ": "JetSMART",
+  "SKX": "Sky Peru"
 }
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -151,7 +169,7 @@ def parse_flight_from_text(text, default_date_str="2026-06-25"):
     # 1. Search for Airline carrier + Flight number (Strict 3-4 digits, or 1-2 digits only with flight context)
     # Suporta códigos IATA (Ex: EK 261) e nomes por extenso (Ex: Flybondi 5101)
     flight_pattern_strict = re.compile(
-        r'\b(AD|G3|AR|FO|LA|JJ|EK|TP|CM|AA|UA|DL|AF|LH|BA|QR|IB|azul|gol|latam|aerolineas|aerolíneas|flybondi|emirates|tap|copa)\s?(?:voo|flight)?\s?(\d{3,4})\b',
+        r'\b(AD|G3|AR|FO|LA|JJ|EK|TP|CM|AA|UA|DL|AF|LH|BA|QR|IB|AV|H2|JA|WJ|azul|gol|latam|aerolineas|aerolíneas|flybondi|emirates|tap|copa|avianca|sky|jetsmart)\s?(?:voo|flight|vuelo)?\s?(\d{3,4})\b',
         re.IGNORECASE
     )
     flight_match = flight_pattern_strict.search(text)
@@ -159,7 +177,7 @@ def parse_flight_from_text(text, default_date_str="2026-06-25"):
     if not flight_match:
         # Fallback para voos de 1-2 dígitos (Ex: EK 73, LA 10) apenas se houver forte contexto de viagem no e-mail
         flight_pattern_short = re.compile(
-            r'\b(AD|G3|AR|FO|LA|JJ|EK|TP|CM|AA|UA|DL|AF|LH|BA|QR|IB|azul|gol|latam|aerolineas|aerolíneas|flybondi|emirates|tap|copa)\s?(?:voo|flight)?\s?(\d{1,2})\b',
+            r'\b(AD|G3|AR|FO|LA|JJ|EK|TP|CM|AA|UA|DL|AF|LH|BA|QR|IB|AV|H2|JA|WJ|azul|gol|latam|aerolineas|aerolíneas|flybondi|emirates|tap|copa|avianca|sky|jetsmart)\s?(?:voo|flight|vuelo)?\s?(\d{1,2})\b',
             re.IGNORECASE
         )
         short_match = flight_pattern_short.search(text)
@@ -185,7 +203,10 @@ def parse_flight_from_text(text, default_date_str="2026-06-25"):
         "FLYBONDI": "FO",
         "EMIRATES": "EK",
         "TAP": "TP",
-        "COPA": "CM"
+        "COPA": "CM",
+        "AVIANCA": "AV",
+        "SKY": "H2",
+        "JETSMART": "JA"
     }
     airline = carrier_map.get(carrier_raw, carrier_raw)
     flight_num = f"{airline} {flight_number_digits}"
@@ -535,191 +556,209 @@ def main():
         print("Certifique-se de que digitou o e-mail correto e que usou uma SENHA DE APP, não a senha comum.")
         return
 
-    # Seleciona pasta de entrada
-    print("[+] Abrindo a Caixa de Entrada (INBOX)...")
-    mail.select("INBOX", readonly=True)
+    # Pastas a escanear (inclui pastas customizadas do usuário além do INBOX)
+    folders_to_scan = ["INBOX", '"PASSAGENS E RESERVAS"', '"Boarding Passes"']
 
-    # 3. Busca Direcionada de E-mails de Voos (Varrendo histórico completo de anos atrás até hoje)
-    print("[+] Executando busca direcionada de voos no histórico completo...")
-    
-    search_queries = [
-        'SUBJECT "reserva"',
-        'SUBJECT "e-ticket"',
-        'SUBJECT "bilhete"',
-        'SUBJECT "localizador"',
-        'SUBJECT "confirmac"',
-        'SUBJECT "itinerary"',
-        'SUBJECT "cartao de embarque"',
-        'SUBJECT "cartão de embarque"',
-        'SUBJECT "azul"',
-        'SUBJECT "voegol"',
-        'SUBJECT "latam"',
-        'SUBJECT "aerolineas"',
-        'SUBJECT "flybondi"',
-        'SUBJECT "emirates"',
-        'SUBJECT "EK"'
-    ]
+    all_candidate_emails = []
 
-    matched_ids = set()
-    for query in search_queries:
+    for current_folder in folders_to_scan:
+        print(f"\n[+] Abrindo pasta: {current_folder}...")
         try:
-            status, data = mail.search(None, query)
-            if status == "OK" and data[0]:
-                for msg_id in data[0].split():
-                    matched_ids.add(msg_id)
+            status_sel, _ = mail.select(current_folder, readonly=True)
+            if status_sel != "OK":
+                print(f"[-] Pasta {current_folder} não encontrada, pulando...")
+                continue
+        except Exception as e:
+            print(f"[-] Falha ao abrir pasta {current_folder}: {e}")
+            continue
+
+        # 3. Busca Direcionada de E-mails de Voos
+        print(f"[+] Executando busca direcionada de voos em {current_folder}...")
+        
+        search_queries = [
+            'SUBJECT "reserva"',
+            'SUBJECT "e-ticket"',
+            'SUBJECT "bilhete"',
+            'SUBJECT "localizador"',
+            'SUBJECT "confirmac"',
+            'SUBJECT "itinerary"',
+            'SUBJECT "cartao de embarque"',
+            'SUBJECT "cart\u00e3o de embarque"',
+            'SUBJECT "azul"',
+            'SUBJECT "voegol"',
+            'SUBJECT "latam"',
+            'SUBJECT "aerolineas"',
+            'SUBJECT "flybondi"',
+            'SUBJECT "emirates"',
+            'SUBJECT "EK"',
+            'SUBJECT "avianca"',
+            'SUBJECT "sky"',
+            'SUBJECT "jetsmart"',
+            'SUBJECT "smiles"',
+            'ALL'
+        ]
+
+        matched_ids = set()
+        for query in search_queries:
+            try:
+                status, data = mail.search(None, query)
+                if status == "OK" and data[0]:
+                    for msg_id in data[0].split():
+                        matched_ids.add(msg_id)
+            except Exception:
+                pass
+
+        msg_ids = sorted(list(matched_ids), key=lambda x: int(x))
+        total_matched = len(msg_ids)
+        print(f"[v] Encontrados {total_matched} e-mails potencialmente elegíveis em {current_folder}.")
+
+        # Whitelist & Blacklist definitions
+        blacklist_subjects = [
+            "comprar milhas", "compre milhas", "compra de milhas", "clube tudoazul", "clube smiles",
+            "clube latam", "extrato de pontos", "saldo de pontos", "seus pontos", "suas milhas",
+            "a partir de", "de r$", "voos baratos", "passagens baratas", "mega promo", "megapromo",
+            "últimos dias", "últimas horas", "aniver", "aniversário", "comissão", "comissões",
+            "ingresso", "ingressos", "disney", "universal", "cruzeiro", "cruzeiros", "apê", "ape",
+            "hostel", "pousada", "hotel", "aluguel", "pilates", "academia", "dentista", "consulta",
+            "camisetas", "camiseta", "calça", "calca", "tênis", "tenis", "polo", "t-shirt", "bermuda",
+            "opiniao", "opinião", "pesquisa de satisfação", "login", "segurança", "dispositivo",
+            "fatura", "cartão de crédito", "cartão de credito", "cartao de credito", "premmia",
+            "viram milhas", "pontos viram", "ir mais alto", "bem-vindo", "bem vindo", "welcome",
+            "black friday", "blackfriday", "happy hour", "happyhour", "jogada aérea", "jogada aerea",
+            "última chamada", "ultima chamada", "fidelidade", "novidade", "novidades", "tarifas especiais",
+            "dia das crianças", "dia das criancas", "dia dos namorados", "dia das mães", "dia dos pais",
+            "natal", "ano novo", "ofertas", "oferta", "promoção", "promocao", "promoções", "promocoes",
+            "desconto", "descontos", "ganhe", "acumule", "participe", "cadastre", "expiro el tiempo",
+            "boleto de cobranca", "protocolo", "pesquisa", "comunicado", "seja bem-vindo", "black-friday",
+            "regulamento", "pontos multiplus", "multiplus", "juntos em", "conhece", "boas festas",
+            "rock in rio", "rockinrio", "concorrer", "compartilhamento", "atualização importante",
+            "atualizacao importante", "novas rotas", "nova rota", "novo destino", "novos destinos",
+            "novo voo", "novos voos", "serviço de bordo", "servico de bordo", "junte e troque",
+            "viaje com tranquilidade", "dia do consumidor", "novas tarifas", "lançou novas", "lancou novas",
+            "seguiremos construindo", "boas festas", "happy-hour", "blackfriday", "experiência de reserva",
+            "validação", "validacao", "valide", "validar", "vacina", "vacinas", "transportou",
+            "se reinventou", "reinventou", "bem-vinda a bordo", "bem-vindo a bordo", "lider", "líder",
+            "upgrade exclusivo", "estacionamento", "estacionar", "parceria", "parcerias"
+        ]
+
+        flight_keywords_local = ["voo", "passagem", "reserva", "e-ticket", "confirmac", "itinerary", "flight", "ticket", "boarding", "azul", "gol", "latam", "decolar", "tripit", "booking", "emirates", "avianca", "sky", "jetsmart", "smiles", "vuelo", "bilhete", "embarque"]
+
+        print(f"[+] Filtrando cabeçalhos em {current_folder}...")
+        chunk_size = 300
+        import time
+        t_start = time.time()
+        folder_candidates = []
+        for i in range(0, total_matched, chunk_size):
+            chunk = msg_ids[i:i+chunk_size]
+            ids_str = b",".join(chunk)
+            try:
+                res, fetch_data = mail.fetch(ids_str, "(BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
+                if res != "OK":
+                    continue
+                for item in fetch_data:
+                    if isinstance(item, tuple):
+                        header_bytes = item[1]
+                        msg = email.message_from_bytes(header_bytes)
+                        
+                        subject = decode_mime_words(msg.get("Subject", ""))
+                        sender = decode_mime_words(msg.get("From", ""))
+                        date_header = msg.get("Date", "")
+                        
+                        sender_lower = sender.lower()
+                        subject_lower = subject.lower()
+                        keyword_str = (subject + " " + sender).lower()
+                        
+                        # 1. Date Age Filter (>= 2015)
+                        try:
+                            date_tuple = email.utils.parsedate_tz(date_header)
+                            if date_tuple:
+                                dt = datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
+                                if dt.year < 2015:
+                                    continue
+                        except Exception:
+                            pass
+
+                        # 2. For INBOX: apply strict whitelist; for custom folders: allow all
+                        if current_folder == "INBOX":
+                            domain = ""
+                            sender_email = ""
+                            if "@" in sender_lower:
+                                email_match = re.search(r'<([^>]+)>', sender_lower)
+                                if email_match:
+                                    sender_email = email_match.group(1).strip()
+                                else:
+                                    sender_email = sender_lower.strip()
+                                domain = sender_email.split("@")[-1].strip()
+                                
+                            is_allowed = False
+                            if sender_email == "ianpietrocapo@gmail.com":
+                                is_allowed = True
+                            else:
+                                for ok_dom in allowed_domains:
+                                    if domain == ok_dom or domain.endswith("." + ok_dom):
+                                        is_allowed = True
+                                        break
+                                        
+                            if not is_allowed:
+                                continue
+                                
+                        # 3. Subject Blacklist Filter
+                        is_blacklisted = any(bad_sub in subject_lower for bad_sub in blacklist_subjects)
+                        if is_blacklisted:
+                            continue
+                            
+                        # 4. Flight Keywords Filter (relax for non-INBOX folders)
+                        if current_folder == "INBOX":
+                            has_flight_kw = any(kw in keyword_str for kw in flight_keywords_local)
+                            if not has_flight_kw:
+                                continue
+                            
+                        # Passed all filters!
+                        envelope = item[0].decode()
+                        msg_id_match = re.search(r'^(\d+)\s+', envelope)
+                        if msg_id_match:
+                            numeric_id = msg_id_match.group(1)
+                            folder_candidates.append((numeric_id, subject, sender, date_header, current_folder))
+            except Exception as e:
+                pass
+                
+        t_end = time.time()
+        print(f"[v] {len(folder_candidates)} candidatos em {current_folder} ({t_end - t_start:.1f}s)")
+        all_candidate_emails.extend(folder_candidates)
+
+    try:
+        mail.close()
+        mail.logout()
+    except Exception:
+        pass
+
+    total_candidates = len(all_candidate_emails)
+    print(f"\n[v] Total de candidatos em todas as pastas: {total_candidates}")
+    print(f"[+] Fazendo a análise do corpo de {total_candidates} e-mails candidatos...")
+
+    # Re-open connection for body fetching
+    try:
+        mail = imaplib.IMAP4_SSL(imap_server)
+        mail.login(email_user, email_pass)
+    except Exception as e:
+        print(f"[-] Falha ao reconectar para leitura dos corpos: {e}")
+        return
+
+    new_flights = []
+    scanned_count = 0
+    for idx in range(total_candidates - 1, -1, -1):
+        entry = all_candidate_emails[idx]
+        numeric_id, subject, sender, date_header, folder_name = entry
+        scanned_count += 1
+        
+        print(f"\n[ Analisando {scanned_count}/{total_candidates} | {folder_name} ] Assunto: '{subject}'")
+        
+        # Select correct folder for this message
+        try:
+            mail.select(folder_name, readonly=True)
         except Exception:
             pass
 
-    msg_ids = sorted(list(matched_ids), key=lambda x: int(x))
-    total_matched = len(msg_ids)
-    print(f"[v] Busca inicial concluída! Encontrados {total_matched} e-mails potencialmente elegíveis no histórico.")
-
-    # Whitelist & Blacklist definitions
-    allowed_domains = [
-        "voeazul.com.br", "voeazul-news.com.br", 
-        "voegol.com.br", "gol.com", 
-        "tam.com.br", "latam.com", "e.latam.com", "email.latam.com", "mail.latam.com",
-        "flybondi.com", "aerolineas.com", "aerolineas.com.ar", 
-        "emirates.com", "e.emirates.email", 
-        "copaair.com", "copa.com",
-        "decolar.com", "tripit.com", "expedia.com", "expediamail.com"
-    ]
-
-    blacklist_subjects = [
-        "comprar milhas", "compre milhas", "compra de milhas", "clube tudoazul", "clube smiles",
-        "clube latam", "extrato de pontos", "saldo de pontos", "seus pontos", "suas milhas",
-        "a partir de", "de r$", "voos baratos", "passagens baratas", "mega promo", "megapromo",
-        "últimos dias", "últimas horas", "aniver", "aniversário", "comissão", "comissões",
-        "ingresso", "ingressos", "disney", "universal", "cruzeiro", "cruzeiros", "apê", "ape",
-        "hostel", "pousada", "hotel", "aluguel", "pilates", "academia", "dentista", "consulta",
-        "camisetas", "camiseta", "calça", "calca", "tênis", "tenis", "polo", "t-shirt", "bermuda",
-        "opiniao", "opinião", "pesquisa de satisfação", "login", "segurança", "dispositivo",
-        "fatura", "cartão de crédito", "cartão de credito", "cartao de credito", "premmia",
-        "viram milhas", "pontos viram", "ir mais alto", "bem-vindo", "bem vindo", "welcome",
-        "black friday", "blackfriday", "happy hour", "happyhour", "jogada aérea", "jogada aerea",
-        "última chamada", "ultima chamada", "fidelidade", "novidade", "novidades", "tarifas especiais",
-        "dia das crianças", "dia das criancas", "dia dos namorados", "dia das mães", "dia dos pais",
-        "natal", "ano novo", "ofertas", "oferta", "promoção", "promocao", "promoções", "promocoes",
-        "desconto", "descontos", "ganhe", "acumule", "participe", "cadastre", "expiro el tiempo",
-        "boleto de cobranca", "protocolo", "pesquisa", "comunicado", "seja bem-vindo", "black-friday",
-        "regulamento", "pontos multiplus", "multiplus", "juntos em", "conhece", "boas festas",
-        "rock in rio", "rockinrio", "concorrer", "compartilhamento", "atualização importante",
-        "atualizacao importante", "novas rotas", "nova rota", "novo destino", "novos destinos",
-        "novo voo", "novos voos", "serviço de bordo", "servico de bordo", "junte e troque",
-        "viaje com tranquilidade", "dia do consumidor", "novas tarifas", "lançou novas", "lancou novas",
-        "seguiremos construindo", "boas festas", "happy-hour", "blackfriday", "experiência de reserva",
-        "validação", "validacao", "valide", "validar", "vacina", "vacinas", "transportou",
-        "se reinventou", "reinventou", "bem-vinda a bordo", "bem-vindo a bordo", "lider", "líder",
-        "upgrade exclusivo", "estacionamento", "estacionar", "parceria", "parcerias"
-    ]
-
-    flight_keywords = ["voo", "passagem", "reserva", "e-ticket", "confirmac", "itinerary", "flight", "ticket", "boarding", "azul", "gol", "latam", "decolar", "tripit", "booking", "emirates"]
-
-    print("[+] Filtrando cabeçalhos e aplicando blacklist inteligente (ano >= 2015)...")
-    chunk_size = 300
-    candidate_emails = [] # tuples: (msg_id, subject, sender, date_header)
-    
-    import time
-    t_start = time.time()
-    for i in range(0, total_matched, chunk_size):
-        chunk = msg_ids[i:i+chunk_size]
-        ids_str = b",".join(chunk)
-        try:
-            res, fetch_data = mail.fetch(ids_str, "(BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
-            if res != "OK":
-                continue
-            for item in fetch_data:
-                if isinstance(item, tuple):
-                    header_bytes = item[1]
-                    msg = email.message_from_bytes(header_bytes)
-                    
-                    subject = decode_mime_words(msg.get("Subject", ""))
-                    sender = decode_mime_words(msg.get("From", ""))
-                    date_header = msg.get("Date", "")
-                    
-                    sender_lower = sender.lower()
-                    subject_lower = subject.lower()
-                    keyword_str = (subject + " " + sender).lower()
-                    
-                    # 1. Date Age Filter (>= 2015)
-                    try:
-                        date_tuple = email.utils.parsedate_tz(date_header)
-                        if date_tuple:
-                            dt = datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
-                            if dt.year < 2015:
-                                continue # Ignorar e-mails muito antigos
-                    except Exception:
-                        pass
-                        
-                    # 2. Strict Whitelist of Senders / Domains
-                    domain = ""
-                    sender_email = ""
-                    if "@" in sender_lower:
-                        email_match = re.search(r'<([^>]+)>', sender_lower)
-                        if email_match:
-                            sender_email = email_match.group(1).strip()
-                        else:
-                            sender_email = sender_lower.strip()
-                        domain = sender_email.split("@")[-1].strip()
-                        
-                    is_allowed = False
-                    if sender_email == "ianpietrocapo@gmail.com":
-                        is_allowed = True
-                    else:
-                        for ok_dom in allowed_domains:
-                            if domain == ok_dom or domain.endswith("." + ok_dom):
-                                is_allowed = True
-                                break
-                                
-                    if not is_allowed:
-                        continue
-                        
-                    # 3. Subject Blacklist Filter
-                    is_blacklisted = False
-                    for bad_sub in blacklist_subjects:
-                        if bad_sub in subject_lower:
-                            is_blacklisted = True
-                            break
-                            
-                    if is_blacklisted:
-                        continue
-                        
-                    # 4. Flight Keywords Filter
-                    has_flight_kw = any(kw in keyword_str for kw in flight_keywords)
-                    if not has_flight_kw:
-                        continue
-                        
-                    # Passed all filters! Extract numeric ID from chunk envelope
-                    envelope = item[0].decode()
-                    msg_id_match = re.search(r'^(\d+)\s+', envelope)
-                    if msg_id_match:
-                        numeric_id = msg_id_match.group(1)
-                        candidate_emails.append((numeric_id, subject, sender, date_header))
-        except Exception as e:
-            pass
-            
-    t_end = time.time()
-    total_candidates = len(candidate_emails)
-    print(f"[v] Cabeçalhos analisados em {t_end - t_start:.2f} segundos!")
-    print(f"[v] Filtrados {total_matched - total_candidates} e-mails de spam, marketing ou muito antigos.")
-    print(f"[v] Identificados {total_candidates} e-mails de voos reais candidatos a serem importados!")
-
-    # Vamos escanear os e-mails candidatos. Para cobrir todo o histórico solicitado, escaneamos todos os candidatos.
-    new_flights = []
-    scan_limit = total_candidates
-    print(f"[+] Fazendo a análise do corpo de {scan_limit} e-mails candidatos de voos...")
-    
-    # Processar candidatos de trás para frente (mais recentes primeiro)
-    scanned_count = 0
-    for idx in range(total_candidates - 1, total_candidates - 1 - scan_limit, -1):
-        if idx < 0:
-            break
-            
-        numeric_id, subject, sender, date_header = candidate_emails[idx]
-        scanned_count += 1
-        
-        print(f"\n[ Analisando {scanned_count}/{scan_limit} ] Assunto: '{subject}'")
-        
         # Fetch do corpo completo do e-mail candidato
         try:
             res_body, data_body = mail.fetch(numeric_id.encode(), "(RFC822)")
