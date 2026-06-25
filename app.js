@@ -1380,7 +1380,7 @@ class FlightyApp {
           e.stopPropagation();
           return;
         }
-        this.openFlightDetailsModal(flight);
+        this.openEditFlightModal(flight);
       });
       rowContainer.appendChild(flightRow);
 
@@ -1410,7 +1410,7 @@ class FlightyApp {
 
             layoverRow.addEventListener("click", (e) => {
               e.stopPropagation();
-              this.openFlightDetailsModal(nextFlight);
+              this.openEditFlightModal(nextFlight);
             });
 
             rowContainer.appendChild(layoverRow);
@@ -2108,7 +2108,7 @@ class FlightyApp {
           isLongPress = false;
           return;
         }
-        this.openFlightDetailsModal(flight, true);
+        this.openEditFlightModal(flight);
       });
 
       listBody.appendChild(row);
