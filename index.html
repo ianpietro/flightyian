@@ -474,9 +474,23 @@
               </div>
               <input type="file" id="csv-file-input" accept=".csv" />
             </div>
+            <div class="settings-item" style="cursor: default;">
+              <div class="settings-item-label">
+                <span>🌓</span> Modo Escuro
+              </div>
+              <label class="ios-switch">
+                <input type="checkbox" id="theme-dark-checkbox">
+                <span class="ios-switch-slider"></span>
+              </label>
+            </div>
             <div class="settings-item" onclick="resetFlightyDatabase()">
               <div class="settings-item-label" style="color: var(--warning-red);">
                 <span>🗑️</span> Redefinir Banco de Dados Local
+              </div>
+            </div>
+            <div class="settings-item" id="logout-button-item">
+              <div class="settings-item-label" style="color: var(--warning-red);">
+                <span>🚪</span> Sair da Conta
               </div>
             </div>
           </div>

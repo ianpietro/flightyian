@@ -90,6 +90,10 @@ class FlightyApp {
     this.mapLoaded = false;
     this.pendingPlot = null;
 
+    // Load and apply theme immediately
+    const savedTheme = safeStorage.getItem("flighty_theme") || "light";
+    document.body.classList.toggle("dark-theme", savedTheme === "dark");
+
     // Initialize standard user flights list (uniquely identified by flightNumber + date)
     // Only load static/mock databases if user is not logging in or has not logged in yet.
     // However, to keep it clean, if there is a session or cloud sync flag, we start with empty lists
@@ -738,7 +742,7 @@ class FlightyApp {
       // Ensure sync flag is set locally
       safeStorage.setItem('flighty_cloud_synced_v4', 'true');
 
-      // 1. Fetch flights
+      // 1. Fetch flights directly from Supabase (sole source of truth)
       const { data: dbFlights, error } = await this.supabase
         .from('flights')
         .select('*')
@@ -746,86 +750,34 @@ class FlightyApp {
 
       if (error) throw error;
 
-      // 2. Bidirectional Merge: Check local flights that haven't synced and upload them
-      const localFlights = [...this.pastFlights, ...this.upcomingFlights];
-      const dbFlightsMap = new Map();
-      if (dbFlights) {
-        dbFlights.forEach(f => {
-          const flightNum = (f.flight_number || '').trim().toUpperCase();
-          const key = `${flightNum}_${f.flight_date}`;
-          dbFlightsMap.set(key, f);
-        });
-      }
+      // Map Supabase records to client flight objects
+      const todayStr = new Date().toISOString().split('T')[0];
+      const mappedFlights = (dbFlights || []).map(f => {
+        const isCompleted = f.flight_date < todayStr;
+        return {
+          id: f.id,
+          date: f.flight_date,
+          airline: f.airline_code,
+          flightNumber: f.flight_number,
+          from: f.origin_airport_code,
+          to: f.destination_airport_code,
+          aircraft: f.aircraft_type || "",
+          tailNumber: f.aircraft_registration || "",
+          distance: f.distance_km || 0,
+          duration: f.duration_minutes || 0,
+          seat: f.seat_number || "",
+          delay: isCompleted ? Math.floor(Math.random() * 15) : 0,
+          status: isCompleted ? "Completed" : "Scheduled"
+        };
+      });
 
-      for (const localFlight of localFlights) {
-        const flightNum = (localFlight.flightNumber || '').trim().toUpperCase();
-        const key = `${flightNum}_${localFlight.date}`;
-        const hasUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(localFlight.id);
+      // Split into past and upcoming
+      this.pastFlights = mappedFlights.filter(f => f.status === "Completed");
+      this.upcomingFlights = mappedFlights.filter(f => f.status === "Scheduled");
 
-        if (!hasUUID) {
-          const matchedDb = dbFlightsMap.get(key);
-          if (matchedDb) {
-            localFlight.id = matchedDb.id;
-          } else if (localFlight.flightNumber) {
-            console.log(`[Sync] Uploading offline/local manual flight: ${localFlight.flightNumber}`);
-            await this.saveFlightToSupabase(localFlight);
-          }
-        }
-      }
-
-      // 3. Re-fetch unified flights list from Supabase
-      const { data: finalFlights, error: finalError } = await this.supabase
-        .from('flights')
-        .select('*')
-        .eq('user_id', this.currentUser.id);
-
-      if (finalError) throw finalError;
-
-      if (finalFlights && finalFlights.length > 0) {
-        const mappedFlights = finalFlights.map(f => {
-          const isCompleted = f.flight_date < new Date().toISOString().split('T')[0];
-          return {
-            id: f.id,
-            flightNumber: f.flight_number || "",
-            airline: f.airline_code || "",
-            from: f.origin_airport_code || "",
-            to: f.destination_airport_code || "",
-            date: f.flight_date,
-            depTime: f.depTime || "14:00",
-            arrTime: f.arrTime || "15:45",
-            duration: f.duration_minutes || 120,
-            distance: f.distance_km || 400,
-            delay: f.delay || 0,
-            aircraft: f.aircraft_type || "Commercial",
-            tailNumber: f.aircraft_registration || "",
-            status: isCompleted ? "Completed" : "Scheduled"
-          };
-        });
-
-        this.pastFlights = mappedFlights.filter(f => f.status === "Completed");
-        this.upcomingFlights = mappedFlights.filter(f => f.status !== "Completed");
-
-        // Save local copy
-        safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
-        safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
-
-        // Re-render
-        this.renderMyFlights();
-        this.renderPassport();
-        this.updateGlobalBadge();
-        this.clearMapRoutes();
-        this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
-      } else {
-        // Cloud is empty. If the user has local flights, auto-migrate them to the cloud database
-        const localFlightsToMigrate = [...this.pastFlights, ...this.upcomingFlights];
-        if (localFlightsToMigrate.length > 0) {
-          console.log("[Supabase] Banco na nuvem vazio. Migrando voos locais para o Supabase...");
-          for (const f of localFlightsToMigrate) {
-            await this.saveFlightToSupabase(f);
-          }
-          console.log("[Supabase] Migração concluída com sucesso!");
-        }
-      }
+      // Save to safeStorage
+      safeStorage.setItem('flighty_past_flights', JSON.stringify(this.pastFlights));
+      safeStorage.setItem('flighty_upcoming_flights', JSON.stringify(this.upcomingFlights));
 
       // 2. Sync profile details
       const { data: profile, error: profileErr } = await this.supabase
@@ -848,7 +800,9 @@ class FlightyApp {
 
         if (profile.avatar_url) {
           const photoImg = document.getElementById("passport-photo-img");
+          const profileImg = document.getElementById("profile-avatar-img");
           if (photoImg) photoImg.src = profile.avatar_url;
+          if (profileImg) profileImg.src = profile.avatar_url;
           safeStorage.setItem("passport-photo-dataurl", profile.avatar_url);
         }
         
@@ -871,6 +825,11 @@ class FlightyApp {
       }
       
       this.updateCloudSyncUI();
+      // Re-render components after sync
+      this.renderPassport();
+      this.renderMyFlights();
+      this.clearMapRoutes();
+      this.plotFlightsOnMap(this.upcomingFlights, 'upcoming');
     } catch (e) {
       console.error("[Supabase] Falha ao sincronizar dados com a nuvem:", e);
     }
@@ -1851,6 +1810,38 @@ class FlightyApp {
   }
 
 
+  // Helper to compress/resize base64 image data to keep storage footprint small
+  compressImage(dataUrl, maxDimension = 300) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => {
+        resolve(dataUrl);
+      };
+      img.src = dataUrl;
+    });
+  }
+
   // Save profile modifications (name and base64 avatar) back to Supabase
   async saveProfileToSupabase() {
     if (!this.supabase || !this.currentUser) return;
@@ -1908,10 +1899,12 @@ class FlightyApp {
     const photoTrigger = document.getElementById("passport-photo-trigger");
     const photoInput = document.getElementById("passport-photo-input");
     const photoImg = document.getElementById("passport-photo-img");
+    const profileImg = document.getElementById("profile-avatar-img");
 
     const savedPhoto = safeStorage.getItem("passport-photo-dataurl");
-    if (savedPhoto && photoImg) {
-      photoImg.src = savedPhoto;
+    if (savedPhoto) {
+      if (photoImg) photoImg.src = savedPhoto;
+      if (profileImg) profileImg.src = savedPhoto;
     }
 
     if (photoTrigger && photoInput) {
@@ -1923,9 +1916,14 @@ class FlightyApp {
         const file = e.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (event) => {
-            const dataUrl = event.target.result;
+          reader.onload = async (event) => {
+            const rawDataUrl = event.target.result;
+            // Compress the image before storing to reduce size footprint
+            const dataUrl = await this.compressImage(rawDataUrl, 300);
+            
             if (photoImg) photoImg.src = dataUrl;
+            if (profileImg) profileImg.src = dataUrl;
+            
             safeStorage.setItem("passport-photo-dataurl", dataUrl);
             if (this.supabase && this.currentUser) {
               this.saveProfileToSupabase();
@@ -3687,6 +3685,13 @@ class FlightyApp {
     const profileImg = document.getElementById("profile-avatar-img");
     const photoImg = document.getElementById("passport-photo-img");
 
+    // Initialize photo sources on load
+    const savedPhoto = safeStorage.getItem("passport-photo-dataurl");
+    if (savedPhoto) {
+      if (profileImg) profileImg.src = savedPhoto;
+      if (photoImg) photoImg.src = savedPhoto;
+    }
+
     if (profileTrigger) {
       profileTrigger.addEventListener("click", () => {
         document.getElementById("passport-photo-input").click();
@@ -3695,12 +3700,46 @@ class FlightyApp {
 
     // Monitor local storage photo changes to update Profile tab
     window.addEventListener("storage", () => {
-      const savedPhoto = safeStorage.getItem("passport-photo-dataurl");
-      if (savedPhoto) {
-        if (profileImg) profileImg.src = savedPhoto;
-        if (photoImg) photoImg.src = savedPhoto;
+      const savedPhotoStorage = safeStorage.getItem("passport-photo-dataurl");
+      if (savedPhotoStorage) {
+        if (profileImg) profileImg.src = savedPhotoStorage;
+        if (photoImg) photoImg.src = savedPhotoStorage;
       }
     });
+
+    // Hook Dark Theme Toggle
+    const themeCheckbox = document.getElementById("theme-dark-checkbox");
+    if (themeCheckbox) {
+      themeCheckbox.checked = document.body.classList.contains("dark-theme");
+      themeCheckbox.addEventListener("change", (e) => {
+        const isDark = e.target.checked;
+        safeStorage.setItem("flighty_theme", isDark ? "dark" : "light");
+        document.body.classList.toggle("dark-theme", isDark);
+      });
+    }
+
+    // Hook Logout Button
+    const logoutBtn = document.getElementById("logout-button-item");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async () => {
+        const confirmLogout = confirm("Deseja realmente sair da sua conta?");
+        if (!confirmLogout) return;
+
+        if (this.supabase) {
+          const { error } = await this.supabase.auth.signOut();
+          if (error) {
+            alert("Erro ao deslogar: " + error.message);
+          }
+        } else {
+          // Fallback offline
+          safeStorage.removeItem('flighty_cloud_synced_v4');
+          safeStorage.removeItem('flighty_flights_initialized_v4');
+          safeStorage.removeItem('flighty_past_flights');
+          safeStorage.removeItem('flighty_upcoming_flights');
+          window.location.reload();
+        }
+      });
+    }
 
     // Listen to surname / givenname edits
     const updateDisplayName = () => {
